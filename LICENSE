@@ -1,0 +1,52 @@
+MIT License
+
+Copyright (c) 2025 Enterprise Memo System Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Commercial Licensing
+
+For commercial use requiring different licensing terms, custom support, or
+enterprise features, please contact the development team.
+
+### Subscription Tiers
+
+This software includes optional subscription-based features managed through
+Stripe. See SUBSCRIPTION_GUIDE.md for details on:
+
+- Free tier: Basic features
+- Professional tier: Advanced features and priority support
+- Enterprise tier: Full features, SLA guarantees, and dedicated support
+
+The subscription system is integrated via billing.py and follows industry-standard
+practices for payment processing and license management.
+
+### Third-Party Licenses
+
+This software includes dependencies with their own licenses. See requirements.txt
+for the full list of dependencies. Notable inclusions:
+
+- cryptography (Apache 2.0 / BSD)
+- stripe (MIT)
+- SQLite (Public Domain)
+- Other Python packages as listed in requirements.txt
+
+All third-party software remains under their respective licenses.

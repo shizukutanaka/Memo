@@ -1,0 +1,51 @@
+# Include documentation files
+include README.md
+include LICENSE
+include CONTRIBUTING.md
+include SECURITY.md
+include FEATURES.md
+include CHANGELOG.md
+include QUICKSTART.md
+include DEPLOYMENT_GUIDE.md
+
+# Include requirements files
+include requirements.txt
+include requirements-dev.txt
+include requirements-production.txt
+
+# Include configuration files
+include setup.py
+include pytest.ini
+include .coveragerc
+include pyproject.toml
+
+# Include localization files
+recursive-include locales *.json
+
+# Include CI/CD configurations
+recursive-include .github *.yml *.yaml
+
+# Include Docker files
+include Dockerfile
+include docker-compose.yml
+include docker-compose.prod.yml
+include .dockerignore
+
+# Include Kubernetes configurations
+include k8s-production.yaml
+
+# Include API documentation
+include api_documentation.yaml
+
+# Exclude test files and directories
+recursive-exclude tests *
+recursive-exclude htmlcov *
+recursive-exclude .pytest_cache *
+exclude .coverage
+
+# Exclude development and build artifacts
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *$py.class
+global-exclude *.so
+global-exclude .DS_Store

@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memo-app"
+version = "1.1.0"
+description = "Lightweight, efficient memo management system with FTS5 search and cloud sync"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "Memo Development Team", email = "memo@example.com" }
+]
+keywords = [
+  "memo",
+  "notes",
+  "database",
+  "sqlite",
+  "fts5",
+  "search",
+  "cli"
+]
+dependencies = []
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Office/Business",
+  "Topic :: Database",
+  "Topic :: Text Processing",
+  "Environment :: Console"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4.0",
+  "pytest-cov>=4.1.0",
+  "pytest-asyncio>=0.21.0",
+  "black>=23.0.0",
+  "flake8>=6.1.0",
+  "isort>=5.13.0",
+  "mypy>=1.7.0",
+  "bandit>=1.7.0",
+  "safety>=2.3.0"
+]
+tui = [
+  "textual>=0.30.0",
+  "rich>=13.0.0"
+]
+sync = [
+  "requests>=2.31.0"
+]
+full = [
+  "textual>=0.30.0",
+  "rich>=13.0.0",
+  "requests>=2.31.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/shizukutanaka/Memo"
+Documentation = "https://github.com/shizukutanaka/Memo/wiki"
+Repository = "https://github.com/shizukutanaka/Memo"
+Issues = "https://github.com/shizukutanaka/Memo/issues"
+
+[project.scripts]
+memo = "memo:main"

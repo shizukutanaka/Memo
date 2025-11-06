@@ -1,0 +1,20 @@
+# Memo Application - Minimal Production Dependencies
+# ===================================================
+
+# Core (Python standard library covers most functionality)
+# The memo application uses only built-in Python modules for core functionality:
+# - sqlite3: Database management
+# - argparse: CLI argument parsing
+# - json: Data serialization
+# - logging: Application logging
+# - datetime: Timestamp handling
+# - pathlib: Cross-platform file paths
+# - secrets: Secure random ID generation
+# - hashlib: Checksum calculation
+# - re: Regular expressions
+
+# OPTIONAL ENHANCEMENTS FOR CLI/UX (Comment out if not needed)
+click>=8.1.0                   # Enhanced CLI framework (alternative to argparse)
+
+# OPTIONAL FOR TESTING (Install with: pip install -r requirements-dev.txt)
+# Development dependencies are in requirements-dev.txt

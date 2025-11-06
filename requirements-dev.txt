@@ -1,0 +1,31 @@
+# Memo Application - Development & Testing Dependencies
+# =======================================================
+
+# Install with: pip install -r requirements-dev.txt
+
+# Testing Framework
+pytest>=7.4.0                  # Testing framework
+pytest-cov>=4.1.0            # Coverage reporting
+pytest-asyncio>=0.21.0       # Async test support
+
+# Code Quality
+flake8>=6.1.0                # Linting
+black>=23.0.0                # Code formatting
+isort>=5.13.0                # Import sorting
+mypy>=1.7.0                  # Type checking
+
+# Performance Testing & Profiling
+pytest-benchmark>=4.0.0      # Benchmarking
+memory-profiler>=0.61.0      # Memory profiling
+
+# Documentation
+sphinx>=7.0.0                # Documentation generation
+sphinx-rtd-theme>=2.0.0      # ReadTheDocs theme
+
+# Development Tools
+ipython>=8.16.0              # Interactive shell
+ipdb>=0.13.0                 # Debugger integration
+
+# Optional: Modern TUI Framework
+textual>=0.30.0              # Modern terminal UI framework
+rich>=13.0.0                 # Rich text formatting for terminal

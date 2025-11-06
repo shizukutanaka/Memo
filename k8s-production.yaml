@@ -1,0 +1,548 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: memo-system
+  labels:
+    name: memo-system
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: memo-config
+  namespace: memo-system
+data:
+  MEMO_LANG: "en"
+  MEMO_ENABLE_TWO_FACTOR_AUTH: "true"
+  MEMO_BACKUP_ENCRYPTION: "true"
+  FLASK_ENV: "production"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: memo-secrets
+  namespace: memo-system
+type: Opaque
+data:
+  # Base64 encoded secrets
+  SECRET_KEY: <base64-encoded-secret-key>
+  JWT_SECRET_KEY: <base64-encoded-jwt-secret>
+  ENCRYPTION_KEY: <base64-encoded-encryption-key>
+  DATABASE_PASSWORD: <base64-encoded-db-password>
+  REDIS_PASSWORD: <base64-encoded-redis-password>
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memo-app
+  namespace: memo-system
+  labels:
+    app: memo-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: memo-app
+  template:
+    metadata:
+      labels:
+        app: memo-app
+    spec:
+      containers:
+      - name: memo-app
+        image: memo-system:latest
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: memo-config
+              key: FLASK_ENV
+        - name: DATABASE_URL
+          value: "postgresql://memo_user:$(DATABASE_PASSWORD)@postgres:5432/memo_db"
+        - name: REDIS_URL
+          value: "redis://redis:6379/0"
+        envFrom:
+        - configMapRef:
+            name: memo-config
+        - secretRef:
+            name: memo-secrets
+        volumeMounts:
+        - name: data-storage
+          mountPath: /app/data
+        - name: backup-storage
+          mountPath: /app/backups
+        - name: log-storage
+          mountPath: /app/logs
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: data-storage
+        persistentVolumeClaim:
+          claimName: memo-data-pvc
+      - name: backup-storage
+        persistentVolumeClaim:
+          claimName: memo-backup-pvc
+      - name: log-storage
+        persistentVolumeClaim:
+          claimName: memo-log-pvc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: memo-system
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          value: "memo_db"
+        - name: POSTGRES_USER
+          value: "memo_user"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: memo-secrets
+              key: DATABASE_PASSWORD
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - memo_user
+            - -d
+            - memo_db
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - memo_user
+            - -d
+            - memo_db
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: memo-system
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        command: ["redis-server", "--appendonly", "yes"]
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: memo-secrets
+              key: REDIS_PASSWORD
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["redis-cli", "ping"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: redis-storage
+        persistentVolumeClaim:
+          claimName: redis-pvc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memo-worker
+  namespace: memo-system
+  labels:
+    app: memo-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: memo-worker
+  template:
+    metadata:
+      labels:
+        app: memo-worker
+    spec:
+      containers:
+      - name: worker
+        image: memo-system:worker
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://memo_user:$(DATABASE_PASSWORD)@postgres:5432/memo_db"
+        - name: REDIS_URL
+          value: "redis://redis:6379/0"
+        envFrom:
+        - secretRef:
+            name: memo-secrets
+        volumeMounts:
+        - name: data-storage
+          mountPath: /app/data
+        - name: backup-storage
+          mountPath: /app/backups
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: data-storage
+        persistentVolumeClaim:
+          claimName: memo-data-pvc
+      - name: backup-storage
+        persistentVolumeClaim:
+          claimName: memo-backup-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memo-app
+  namespace: memo-system
+spec:
+  selector:
+    app: memo-app
+  ports:
+  - port: 80
+    targetPort: 5000
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: memo-system
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: memo-system
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: memo-ingress
+  namespace: memo-system
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - memo.yourdomain.com
+    secretName: memo-tls
+  rules:
+  - host: memo.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: memo-app
+            port:
+              number: 80
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: memo-data-pvc
+  namespace: memo-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: memo-backup-pvc
+  namespace: memo-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: memo-log-pvc
+  namespace: memo-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: memo-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: memo-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: standard
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: memo-app-pdb
+  namespace: memo-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: memo-app
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: memo-service-account
+  namespace: memo-system
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: memo-role
+  namespace: memo-system
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: memo-role-binding
+  namespace: memo-system
+subjects:
+- kind: ServiceAccount
+  name: memo-service-account
+  namespace: memo-system
+roleRef:
+  kind: Role
+  name: memo-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: memo-system
+data:
+  nginx.conf: |
+    events {
+      worker_connections 1024;
+    }
+    http {
+      upstream memo_app {
+        server memo-app:5000;
+      }
+
+      server {
+        listen 80;
+        server_name memo.yourdomain.com;
+
+        location / {
+          proxy_pass http://memo_app;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /health {
+          proxy_pass http://memo_app/health;
+          access_log off;
+        }
+      }
+    }
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: memo-app-hpa
+  namespace: memo-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: memo-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: memo-app-monitor
+  namespace: memo-system
+spec:
+  selector:
+    matchLabels:
+      app: memo-app
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s

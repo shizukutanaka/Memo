@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <meta name="description" content="Enterprise-grade memo management platform with enhanced security and performance">
+    <meta name="theme-color" content="#0052CC">
+    <title>Memo System - Enterprise Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='design-tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- Enhanced accessibility -->
+    <meta name="color-scheme" content="light dark">
+    <meta name="format-detection" content="telephone=no">
+</head>
+<body class="font-sans antialiased">
+    <!-- Skip to main content link for screen readers -->
+    <a href="#main-content" class="sr-only">Skip to main content</a>
+
+    <div class="container">
+        <!-- Header with enhanced accessibility -->
+        <header class="card" style="margin-top: var(--space-300); margin-bottom: var(--space-300);" role="banner">
+            <div class="card-header flex justify-between items-center">
+                <div>
+                    <h1 id="main-heading">Memo System</h1>
+                    <p>Enterprise-grade memo management platform</p>
+                </div>
+                <button id="theme-toggle" class="btn btn-subtle" aria-label="Toggle theme" data-tooltip="Toggle theme">
+                    <!-- Icon will be inserted by JS -->
+                </button>
+            </div>
+        </header>
+
+        <!-- Status Message with ARIA live region -->
+        <div id="status-message" class="banner" role="alert" aria-live="polite" aria-atomic="true" style="display: none;">
+            <span class="banner-icon" aria-hidden="true"></span>
+            <span class="banner-content"></span>
+        </div>
+
+        <!-- Login Section with enhanced accessibility -->
+        <div class="space-y-3">
+            <section id="login-section" class="card" aria-labelledby="login-heading">
+                <div class="card-header">
+                <h2 id="login-heading">Administrator Login</h2>
+            </div>
+            <div class="card-body">
+                <form id="login-form" autocomplete="off" novalidate aria-describedby="login-help">
+                    <div class="form-group-enhanced">
+                        <label for="username" class="form-label-enhanced">Administrator Username</label>
+                        <input
+                            id="username"
+                            name="username"
+                            type="text"
+                            class="form-input-enhanced"
+                            required
+                            minlength="3"
+                            maxlength="64"
+                            autocomplete="username"
+                            placeholder="Enter your administrator username"
+                            aria-describedby="username-error"
+                        >
+                        <div id="username-error" class="form-error-message" role="alert" aria-live="polite"></div>
+                    </div>
+
+                    <div class="form-group-enhanced">
+                        <label for="password" class="form-label-enhanced">Password</label>
+                        <input
+                            id="password"
+                            name="password"
+                            type="password"
+                            class="form-input-enhanced"
+                            required
+                            minlength="12"
+                            autocomplete="current-password"
+                            placeholder="Enter your password"
+                            aria-describedby="password-error password-help"
+                        >
+                        <div id="password-error" class="form-error-message" role="alert" aria-live="polite"></div>
+                        <div id="password-help" class="form-help-text">
+                            Password must be at least 12 characters long for security.
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="login-button">
+                        <span class="btn-text">Sign In</span>
+                        <span class="loading-spinner" aria-hidden="true" style="display: none;"></span>
+                    </button>
+
+                    <div id="login-help" class="form-help-text" style="margin-top: var(--space-200);">
+                        Use the credentials configured in your environment variables.
+                    </div>
+                </form>
+            </div>
+            </section>
+        </div>
+
+        <!-- Main Application with proper landmarks -->
+        <!-- Main Application Sections -->
+        <div id="app-container" class="space-y-3" hidden>
+            <main id="app-section" class="card" aria-labelledby="app-heading">
+                <!-- Memo Creation Form with enhanced accessibility -->
+                <div class="card-header">
+                    <h2 id="app-heading">Create New Memo</h2>
+                </div>
+                <div class="card-body">
+                    <form id="memo-form" novalidate aria-describedby="memo-help">
+                        <div class="form-group-enhanced">
+                            <label for="memo-text" class="form-label-enhanced">Memo Content</label>
+                            <textarea
+                                id="memo-text"
+                                name="memo-text"
+                                class="form-input-enhanced"
+                                required
+                                placeholder="Enter your memo content here..."
+                                rows="4"
+                                aria-describedby="memo-text-error memo-text-help"
+                                maxlength="100000"
+                            ></textarea>
+                            <div id="memo-text-error" class="form-error-message" aria-live="polite"></div>
+                            <div id="memo-text-help" class="form-help-text">
+                                Maximum 100,000 characters. Use clear, descriptive content.
+                            </div>
+                        </div>
+
+                        <div class="grid-responsive" style="margin-bottom: var(--space-200);">
+                            <div class="form-group-enhanced">
+                                <label for="memo-type" class="form-label-enhanced">Type</label>
+                                <select id="memo-type" name="memo-type" class="form-input-enhanced" aria-describedby="memo-type-help">
+                                    <option value="note">Note</option>
+                                    <option value="task">Task</option>
+                                    <option value="idea">Idea</option>
+                                    <option value="meeting">Meeting</option>
+                                </select>
+                                <div id="memo-type-help" class="form-help-text">Choose the most appropriate type for your memo.</div>
+                            </div>
+                            <div class="form-group-enhanced">
+                                <label for="memo-priority" class="form-label-enhanced">Priority</label>
+                                <select id="memo-priority" name="memo-priority" class="form-input-enhanced" aria-describedby="memo-priority-help">
+                                    <option value="5">None</option>
+                                    <option value="4">Low</option>
+                                    <option value="3">Medium</option>
+                                    <option value="2">High</option>
+                                    <option value="1">Critical</option>
+                                </select>
+                                <div id="memo-priority-help" class="form-help-text">Set priority level for organization and filtering.</div>
+                            </div>
+                        </div>
+
+                        <div class="grid-responsive" style="margin-bottom: var(--space-200);">
+                            <div class="form-group-enhanced">
+                                <label for="memo-category" class="form-label-enhanced">Category</label>
+                                <input
+                                    id="memo-category"
+                                    name="memo-category"
+                                    class="form-input-enhanced"
+                                    placeholder="e.g., work, personal, project"
+                                    aria-describedby="memo-category-help"
+                                    maxlength="64"
+                                >
+                                <div id="memo-category-help" class="form-help-text">Optional category for better organization.</div>
+                            </div>
+                            <div class="form-group-enhanced">
+                                <label for="memo-tags" class="form-label-enhanced">Tags</label>
+                                <input
+                                    id="memo-tags"
+                                    name="memo-tags"
+                                    class="form-input-enhanced"
+                                    placeholder="e.g., urgent, review, planning"
+                                    aria-describedby="memo-tags-help"
+                                    maxlength="256"
+                                >
+                                <div id="memo-tags-help" class="form-help-text">Comma-separated tags for easy searching and filtering.</div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="create-memo-button">
+                            <span class="btn-text">Create Memo</span>
+                            <span class="loading-spinner" aria-hidden="true" style="display: none;"></span>
+                        </button>
+
+                        <div id="memo-help" class="form-help-text" style="margin-top: var(--space-200);">
+                            All fields are validated before submission. Use appropriate content for better search results.
+                        </div>
+                    </form>
+                </div>
+            </main>
+
+            <!-- Search Section with enhanced accessibility -->
+            <section id="search-section" class="card" aria-labelledby="search-heading">
+                <div class="card-header flex justify-between items-center">
+                    <h2 id="search-heading">Advanced Search</h2>
+                    <button id="search-toggle" class="btn btn-subtle" aria-expanded="true" aria-controls="search-body" data-tooltip="Toggle search panel">
+                        <span class="toggle-icon">-</span>
+                    </button>
+                </div>
+                <div id="search-body" class="card-body">
+                <form id="search-form" autocomplete="off" novalidate aria-describedby="search-help">
+                    <div class="grid-responsive">
+                        <div class="form-group-enhanced">
+                            <label for="search-input" class="form-label-enhanced">Search Query</label>
+                            <input
+                                id="search-input"
+                                name="search-input"
+                                class="form-input-enhanced"
+                                placeholder="Enter search terms..."
+                                aria-describedby="search-input-help"
+                                maxlength="256"
+                            >
+                            <div id="search-input-help" class="form-help-text">Search across memo content, titles, and tags.</div>
+                        </div>
+                        <div class="form-group-enhanced">
+                            <label for="search-type" class="form-label-enhanced">Search Mode</label>
+                            <select id="search-type" name="search-type" class="form-input-enhanced">
+                                <option value="text">Text Search</option>
+                                <option value="semantic">Semantic Search</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid-responsive">
+                        <fieldset class="form-group-enhanced">
+                            <legend class="form-label-enhanced">Status Filter</legend>
+                            <div class="checkbox-group" role="group" aria-labelledby="status-filter-legend">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="status-active" name="status-filter" value="active">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">Active</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="status-completed" name="status-filter" value="completed">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">Completed</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="status-archived" name="status-filter" value="archived">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">Archived</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="form-group-enhanced">
+                            <legend class="form-label-enhanced">Priority Filter</legend>
+                            <div class="checkbox-group" role="group" aria-labelledby="priority-filter-legend">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="priority-critical" name="priority-filter" value="1">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">Critical</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="priority-high" name="priority-filter" value="2">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">High</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="priority-medium" name="priority-filter" value="3">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">Medium</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="priority-low" name="priority-filter" value="4">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">Low</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="priority-none" name="priority-filter" value="5">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">None</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <div class="form-group-enhanced">
+                            <label for="category-filter" class="form-label-enhanced">Category</label>
+                            <input
+                                id="category-filter"
+                                name="category-filter"
+                                class="form-input-enhanced"
+                                placeholder="Filter by category"
+                                maxlength="64"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="flex gap-md" style="margin-top: var(--space-200);">
+                        <button type="submit" class="btn btn-primary" id="search-button">
+                            <span class="btn-text">Search</span>
+                            <span class="loading-spinner" aria-hidden="true" style="display: none;"></span>
+                        </button>
+                        <button type="button" id="clear-search" class="btn btn-default">
+                            Clear Filters
+                        </button>
+                    </div>
+
+                    <div id="search-help" class="form-help-text" style="margin-top: var(--space-200);">
+                        Use multiple filters together for precise results. Search is case-insensitive.
+                    </div>
+                </form>
+            </div>
+            </section>
+
+            <!-- Statistics Section with proper structure -->
+            <section id="stats-section" class="card" aria-labelledby="stats-heading">
+                <div class="card-header">
+                <h2 id="stats-heading">System Statistics</h2>
+            </div>
+            <div class="card-body">
+                <div class="grid-responsive" id="stats" role="region" aria-label="System statistics">
+                    <!-- Stats will be populated by JavaScript -->
+                </div>
+            </div>
+            </section>
+
+            <!-- Memos List with enhanced accessibility -->
+            <section id="memos-section" class="card" aria-labelledby="memos-heading">
+                <div class="card-header">
+                <h2 id="memos-heading">Your Memos</h2>
+            </div>
+            <div class="card-body">
+                <div class="memos" id="memo-list" role="list" aria-label="Memo list">
+                    <!-- Memos will be populated by JavaScript -->
+                </div>
+                <div id="pagination-container" class="pagination"></div>
+            </div>
+        </section>
+        </div>
+            <span class="loading-overlay-text">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Modal Dialog -->
+    <div id="modal-container" class="modal-overlay" hidden>
+        <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <header class="modal-header">
+                <h2 id="modal-title" class="modal-title">Confirmation</h2>
+                <button id="modal-close" class="modal-close" aria-label="Close dialog">&times;</button>
+            </header>
+            <div id="modal-body" class="modal-body">
+                <p>Are you sure you want to proceed?</p>
+            </div>
+            <footer class="modal-footer">
+                <button id="modal-cancel" class="btn btn-default">Cancel</button>
+                <button id="modal-confirm" class="btn btn-danger">Confirm</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Enhanced JavaScript loading -->
+    <script src="/socket.io/socket.io.js" defer></script>
+    <script src="{{ url_for('static', filename='memo_app.js') }}" defer></script>
+
+    <!-- Enhanced accessibility script -->
+    <script>
+        // Enhanced keyboard navigation and accessibility
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus management for modal dialogs
+            const focusableElements = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+            // Enhanced form validation with accessibility
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    const isValid = validateForm(this);
+                    if (!isValid) {
+                        e.preventDefault();
+                        announceErrors(this);
+                    }
+                });
+            });
+
+            // Enhanced error announcement for screen readers
+            function announceErrors(form) {
+                const errors = form.querySelectorAll('.form-error-message');
+                if (errors.length > 0) {
+                    const firstError = errors[0];
+                    firstError.focus();
+                    // Create live region announcement
+                    announceToScreenReader(`Form has ${errors.length} error${errors.length > 1 ? 's' : ''}`);
+                }
+            }
+
+            function announceToScreenReader(message) {
+                const announcement = document.createElement('div');
+                announcement.setAttribute('aria-live', 'polite');
+                announcement.setAttribute('aria-atomic', 'true');
+                announcement.className = 'sr-only';
+                announcement.textContent = message;
+                document.body.appendChild(announcement);
+                setTimeout(() => document.body.removeChild(announcement), 1000);
+            }
+
+            // Enhanced loading state management
+            window.showLoading = function(element) {
+                const btnText = element.querySelector('.btn-text');
+                const spinner = element.querySelector('.loading-spinner');
+                if (btnText && spinner) {
+                    btnText.style.display = 'none';
+                    spinner.style.display = 'block';
+                    element.disabled = true;
+                    element.setAttribute('aria-busy', 'true');
+                }
+            };
+
+            window.hideLoading = function(element) {
+                const btnText = element.querySelector('.btn-text');
+                const spinner = element.querySelector('.loading-spinner');
+                if (btnText && spinner) {
+                    btnText.style.display = 'inline';
+                    spinner.style.display = 'none';
+                    element.disabled = false;
+                    element.removeAttribute('aria-busy');
+                }
+            };
+        });
+    </script>
+</body>
+</html>

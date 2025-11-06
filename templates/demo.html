@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlassian Design System Demo - Memo App</title>
+    <link rel="stylesheet" href="/static/design-tokens.css">
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* Demo specific styles */
+        .demo-section {
+            margin-bottom: var(--space-600);
+        }
+        .demo-title {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text);
+            margin-bottom: var(--space-300);
+            border-bottom: var(--border-width-md) solid var(--color-border);
+            padding-bottom: var(--space-200);
+        }
+        .component-grid {
+            display: grid;
+            gap: var(--space-400);
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        .component-card {
+            border: var(--border-width-sm) solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            padding: var(--space-300);
+        }
+        .component-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--space-200);
+            color: var(--color-text);
+        }
+        .code-block {
+            background-color: var(--color-neutral-100);
+            border: var(--border-width-sm) solid var(--color-border);
+            border-radius: var(--border-radius-md);
+            padding: var(--space-200);
+            margin-top: var(--space-200);
+            font-family: var(--font-family-mono);
+            font-size: var(--font-size-sm);
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header style="margin-bottom: var(--space-600);">
+            <h1 style="font-size: var(--font-size-3xl); color: var(--color-text); margin-bottom: var(--space-200);">
+                Atlassian Design System Demo
+            </h1>
+            <p style="font-size: var(--font-size-lg); color: var(--color-text-subtle);">
+                メモアプリケーションのためのAtlassianデザインコンポーネントのデモンストレーション
+            </p>
+        </header>
+
+        <!-- バナーコンポーネント -->
+        <section class="demo-section">
+            <h2 class="demo-title">📢 Banner Components</h2>
+            <div class="banner banner-announcement">
+                <div class="banner-icon">ℹ️</div>
+                <div class="banner-content">
+                    <div class="banner-title">お知らせ</div>
+                    <div class="banner-description">新しい機能が追加されました。詳細を確認してください。</div>
+                </div>
+                <div class="banner-actions">
+                    <button class="btn btn-primary btn-sm">詳細を見る</button>
+                    <button class="banner-dismiss" aria-label="閉じる">✕</button>
+                </div>
+            </div>
+
+            <div class="banner banner-success">
+                <div class="banner-icon">✓</div>
+                <div class="banner-content">
+                    <div class="banner-description">メモが正常に保存されました。</div>
+                </div>
+                <div class="banner-actions">
+                    <button class="banner-dismiss" aria-label="閉じる">✕</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ボタンコンポーネント -->
+        <section class="demo-section">
+            <h2 class="demo-title">🔘 Button Components</h2>
+            <div class="component-grid">
+                <div class="component-card">
+                    <h3 class="component-title">Primary Buttons</h3>
+                    <button class="btn btn-primary">Primary</button>
+                    <button class="btn btn-primary btn-sm" style="margin-left: var(--space-100);">Small</button>
+                    <button class="btn btn-primary btn-lg" style="margin-left: var(--space-100);">Large</button>
+                </div>
+
+                <div class="component-card">
+                    <h3 class="component-title">Secondary & Subtle</h3>
+                    <button class="btn btn-secondary">Secondary</button>
+                    <button class="btn btn-subtle" style="margin-left: var(--space-100);">Subtle</button>
+                    <button class="btn btn-link" style="margin-left: var(--space-100);">Link</button>
+                </div>
+
+                <div class="component-card">
+                    <h3 class="component-title">Status Buttons</h3>
+                    <button class="btn btn-warning">Warning</button>
+                    <button class="btn btn-danger" style="margin-left: var(--space-100);">Danger</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ロゼンジコンポーネント -->
+        <section class="demo-section">
+            <h2 class="demo-title">🏷️ Lozenge Components</h2>
+            <div class="component-card">
+                <h3 class="component-title">Priority Levels</h3>
+                <span class="lozenge lozenge-danger">Critical</span>
+                <span class="lozenge lozenge-warning" style="margin-left: var(--space-100);">High</span>
+                <span class="lozenge lozenge-info" style="margin-left: var(--space-100);">Medium</span>
+                <span class="lozenge lozenge-success" style="margin-left: var(--space-100);">Low</span>
+                <span class="lozenge lozenge-default" style="margin-left: var(--space-100);">None</span>
+                <div style="margin-top: var(--space-200);">
+                    <span class="lozenge lozenge-sm lozenge-new">New</span>
+                    <span class="lozenge lozenge-lg lozenge-moved" style="margin-left: var(--space-100);">Moved</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- アバターコンポーネント -->
+        <section class="demo-section">
+            <h2 class="demo-title">👤 Avatar Components</h2>
+            <div class="component-card">
+                <h3 class="component-title">Avatar Sizes</h3>
+                <div style="display: flex; align-items: center; gap: var(--space-200);">
+                    <div class="avatar avatar-sm">JD</div>
+                    <div class="avatar avatar-md">AB</div>
+                    <div class="avatar avatar-lg">CD</div>
+                    <div class="avatar avatar-xl">EF</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- フォームコンポーネント -->
+        <section class="demo-section">
+            <h2 class="demo-title">📝 Form Components</h2>
+            <div class="component-grid">
+                <div class="component-card">
+                    <h3 class="component-title">Form Fields</h3>
+                    <form>
+                        <div class="field-group">
+                            <label for="demo-input" class="form-label">Input Field</label>
+                            <input type="text" id="demo-input" class="form-input" placeholder="Enter text...">
+                        </div>
+
+                        <div class="field-group">
+                            <label for="demo-textarea" class="form-label">Textarea</label>
+                            <textarea id="demo-textarea" class="form-textarea" placeholder="Enter longer text..."></textarea>
+                        </div>
+
+                        <div class="field-group">
+                            <label for="demo-select" class="form-label">Select</label>
+                            <select id="demo-select" class="form-input">
+                                <option value="">Choose an option</option>
+                                <option value="1">Option 1</option>
+                                <option value="2">Option 2</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="component-card">
+                    <h3 class="component-title">Validation States</h3>
+                    <div class="field field-success">
+                        <label class="form-label">Success State</label>
+                        <input type="text" class="form-input" value="Valid input">
+                        <div class="field-message field-message-success">
+                            <span class="field-message-icon">✓</span>
+                            <span>This field is valid</span>
+                        </div>
+                    </div>
+
+                    <div class="field field-error">
+                        <label class="form-label">Error State</label>
+                        <input type="text" class="form-input" value="Invalid input">
+                        <div class="field-message field-message-error">
+                            <span class="field-message-icon">⚠</span>
+                            <span>This field has an error</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- タブコンポーネント -->
+        <section class="demo-section">
+            <h2 class="demo-title">📑 Tab Components</h2>
+            <div class="component-card">
+                <div class="tabs">
+                    <button class="tab active">Active Tab</button>
+                    <button class="tab">Inactive Tab</button>
+                    <button class="tab">Another Tab</button>
+                </div>
+                <div class="tab-content">
+                    <p>This is the content for the active tab. The tabs component provides easy navigation between different sections of content.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 空状態コンポーネント -->
+        <section class="demo-section">
+            <h2 class="demo-title">📭 Empty States</h2>
+            <div class="component-card">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <h3 class="empty-state-title">No memos found</h3>
+                    <p class="empty-state-description">You haven't created any memos yet. Start by creating your first memo to get organized.</p>
+                    <div class="empty-state-actions">
+                        <button class="btn btn-primary">Create First Memo</button>
+                        <button class="btn btn-link">Learn More</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ドロップダウンコンポーネント -->
+        <section class="demo-section">
+            <h2 class="demo-title">📋 Dropdown Components</h2>
+            <div class="component-card">
+                <h3 class="component-title">Dropdown Menu</h3>
+                <div class="dropdown">
+                    <button class="dropdown-trigger">
+                        Actions
+                        <span>▼</span>
+                    </button>
+                    <div class="dropdown-menu" style="display: none;">
+                        <button class="dropdown-item">Edit</button>
+                        <button class="dropdown-item">Duplicate</button>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item dropdown-item-danger">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ツールチップコンポーネント -->
+        <section class="demo-section">
+            <h2 class="demo-title">💬 Tooltip Components</h2>
+            <div class="component-card">
+                <h3 class="component-title">Tooltip Directions</h3>
+                <div style="display: flex; gap: var(--space-400); justify-content: center; padding: var(--space-400);">
+                    <div class="tooltip-container">
+                        <button class="btn btn-secondary">Top</button>
+                        <div class="tooltip tooltip-top">Tooltip on top</div>
+                    </div>
+
+                    <div class="tooltip-container">
+                        <button class="btn btn-secondary">Bottom</button>
+                        <div class="tooltip tooltip-bottom">Tooltip on bottom</div>
+                    </div>
+
+                    <div class="tooltip-container">
+                        <button class="btn btn-secondary">Left</button>
+                        <div class="tooltip tooltip-left">Tooltip on left</div>
+                    </div>
+
+                    <div class="tooltip-container">
+                        <button class="btn btn-secondary">Right</button>
+                        <div class="tooltip tooltip-right">Tooltip on right</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- モーダルデモボタン -->
+        <section class="demo-section">
+            <h2 class="demo-title">🖼️ Modal Components</h2>
+            <div class="component-card">
+                <h3 class="component-title">Modal Triggers</h3>
+                <div style="display: flex; gap: var(--space-200);">
+                    <button class="btn btn-primary" onclick="openModal('small')">Small Modal</button>
+                    <button class="btn btn-primary" onclick="openModal('medium')">Medium Modal</button>
+                    <button class="btn btn-primary" onclick="openModal('large')">Large Modal</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Progress Components -->
+        <section class="demo-section">
+            <h2 class="demo-title">📊 Progress Components</h2>
+            <div class="component-card">
+                <h3 class="component-title">Progress Bars</h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-300);">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-100);">
+                            <span style="font-size: var(--font-size-sm); color: var(--color-text-subtle);">Default Progress</span>
+                            <span style="font-size: var(--font-size-sm); color: var(--color-text-subtle);">75%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-fill" style="width: 75%;"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-100);">
+                            <span style="font-size: var(--font-size-sm); color: var(--color-text-subtle);">Success Progress</span>
+                            <span style="font-size: var(--font-size-sm); color: var(--color-text-subtle);">90%</span>
+                        </div>
+                        <div class="progress progress-success">
+                            <div class="progress-fill" style="width: 90%;"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-100);">
+                            <span style="font-size: var(--font-size-sm); color: var(--color-text-subtle);">Warning Progress</span>
+                            <span style="font-size: var(--font-size-sm); color: var(--color-text-subtle);">60%</span>
+                        </div>
+                        <div class="progress progress-warning">
+                            <div class="progress-fill" style="width: 60%;"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: var(--space-100);">
+                            <span style="font-size: var(--font-size-sm); color: var(--color-text-subtle);">Danger Progress</span>
+                            <span style="font-size: var(--font-size-sm); color: var(--color-text-subtle);">30%</span>
+                        </div>
+                        <div class="progress progress-danger">
+                            <div class="progress-fill" style="width: 30%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Toggle Switches -->
+        <section class="demo-section">
+            <h2 class="demo-title">🔄 Toggle Switches</h2>
+            <div class="component-card">
+                <h3 class="component-title">Toggle Controls</h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-300);">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: var(--font-size-sm); color: var(--color-text);">Enable notifications</span>
+                        <label class="toggle">
+                            <input type="checkbox" class="toggle-input" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: var(--font-size-sm); color: var(--color-text);">Dark mode</span>
+                        <label class="toggle">
+                            <input type="checkbox" class="toggle-input">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: var(--font-size-sm); color: var(--color-text-disabled);">Disabled toggle</span>
+                        <label class="toggle">
+                            <input type="checkbox" class="toggle-input" disabled>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Enhanced Form Controls -->
+        <section class="demo-section">
+            <h2 class="demo-title">📋 Enhanced Form Controls</h2>
+            <div class="component-grid">
+                <div class="component-card">
+                    <h3 class="component-title">Radio Buttons</h3>
+                    <fieldset class="radio-group">
+                        <legend style="font-size: var(--font-size-sm); color: var(--color-text-subtle); margin-bottom: var(--space-200);">Select priority level</legend>
+                        <label class="radio-item">
+                            <input type="radio" name="priority-radio" value="low" class="radio-input">
+                            <span class="radio-custom"></span>
+                            <span class="radio-text">Low Priority</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="priority-radio" value="medium" class="radio-input" checked>
+                            <span class="radio-custom"></span>
+                            <span class="radio-text">Medium Priority</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="priority-radio" value="high" class="radio-input">
+                            <span class="radio-custom"></span>
+                            <span class="radio-text">High Priority</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="priority-radio" value="critical" class="radio-input" disabled>
+                            <span class="radio-custom"></span>
+                            <span class="radio-text" style="color: var(--color-text-disabled);">Critical (Disabled)</span>
+                        </label>
+                    </fieldset>
+                </div>
+
+                <div class="component-card">
+                    <h3 class="component-title">Checkboxes</h3>
+                    <fieldset class="checkbox-group">
+                        <legend style="font-size: var(--font-size-sm); color: var(--color-text-subtle); margin-bottom: var(--space-200);">Select categories</legend>
+                        <label class="checkbox-item">
+                            <input type="checkbox" class="checkbox-input" checked>
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Work</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" class="checkbox-input">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Personal</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" class="checkbox-input" checked>
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text">Project</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" class="checkbox-input" disabled>
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-text" style="color: var(--color-text-disabled);">Archive (Disabled)</span>
+                        </label>
+                    </fieldset>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pagination -->
+        <section class="demo-section">
+            <h2 class="demo-title">📄 Pagination</h2>
+            <div class="component-card">
+                <h3 class="component-title">Page Navigation</h3>
+                <nav aria-label="Pagination navigation">
+                    <ul class="pagination" style="justify-content: flex-start;">
+                        <li><button class="pagination-item disabled" aria-label="Previous page">‹</button></li>
+                        <li><button class="pagination-item active" aria-label="Page 1" aria-current="page">1</button></li>
+                        <li><button class="pagination-item" aria-label="Page 2">2</button></li>
+                        <li><button class="pagination-item" aria-label="Page 3">3</button></li>
+                        <li><span class="pagination-ellipsis">…</span></li>
+                        <li><button class="pagination-item" aria-label="Page 10">10</button></li>
+                        <li><button class="pagination-item" aria-label="Next page">›</button></li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+
+        <!-- Toast Notifications -->
+        <section class="demo-section">
+            <h2 class="demo-title">🍞 Toast Notifications</h2>
+            <div class="component-card">
+                <h3 class="component-title">Notification Types</h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-200);">
+                    <button class="btn btn-primary" onclick="showToast('success')">Show Success Toast</button>
+                    <button class="btn btn-warning" onclick="showToast('warning')">Show Warning Toast</button>
+                    <button class="btn btn-danger" onclick="showToast('error')">Show Error Toast</button>
+                    <button class="btn btn-secondary" onclick="showToast('info')">Show Info Toast</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Enhanced Badges -->
+        <section class="demo-section">
+            <h2 class="demo-title">🏷️ Enhanced Badges</h2>
+            <div class="component-card">
+                <h3 class="component-title">Badge Variants</h3>
+                <div style="display: flex; gap: var(--space-200); flex-wrap: wrap;">
+                    <span class="badge badge-default">Default</span>
+                    <span class="badge badge-added">+ Added</span>
+                    <span class="badge badge-removed">- Removed</span>
+                    <span class="badge badge-success">Success</span>
+                    <span class="badge badge-warning">Warning</span>
+                    <span class="badge badge-danger">Error</span>
+                    <span class="badge badge-info">Info</span>
+                    <span class="badge badge-new">New</span>
+                    <span class="badge badge-moved">Moved</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Navigation -->
+        <section class="demo-section">
+            <h2 class="demo-title">🧭 Navigation</h2>
+            <div class="component-card">
+                <h3 class="component-title">Navigation Menu</h3>
+                <nav class="nav">
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link active">
+                                <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-6 6A1 1 0 004 10v8a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1v-8a1 1 0 01.293-.707l6-6z"/>
+                                </svg>
+                                <span class="nav-text">Dashboard</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="nav-text">Memos</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="nav-text">Profile</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <svg class="nav-icon" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="nav-text">Settings</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+
+        <!-- Date Picker -->
+        <section class="demo-section">
+            <h2 class="demo-title">📅 Date Picker</h2>
+            <div class="component-card">
+                <h3 class="component-title">Date Selection</h3>
+                <div style="max-width: 300px;">
+                    <div class="field-group">
+                        <label for="demo-datepicker" class="form-label">Select Date</label>
+                        <div class="datepicker">
+                            <input type="text" id="demo-datepicker" class="form-input datepicker-input" placeholder="Choose a date" readonly>
+                            <div class="datepicker-popup hidden" id="datepicker-popup">
+                                <div class="datepicker-header">
+                                    <div class="datepicker-month-year" id="datepicker-month-year">December 2024</div>
+                                    <div class="datepicker-nav">
+                                        <button class="datepicker-nav-btn" id="datepicker-prev" aria-label="Previous month">‹</button>
+                                        <button class="datepicker-nav-btn" id="datepicker-next" aria-label="Next month">›</button>
+                                    </div>
+                                </div>
+                                <div class="datepicker-grid" id="datepicker-grid">
+                                    <!-- Days will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Enhanced Search with Autocomplete -->
+        <section class="demo-section">
+            <h2 class="demo-title">🔍 Enhanced Search</h2>
+            <div class="component-card">
+                <h3 class="component-title">Search with Autocomplete</h3>
+                <div class="search-container">
+                    <input type="text" class="search-input" placeholder="Search memos, tasks, or ideas..." id="demo-search">
+                    <div class="search-results" id="search-results">
+                        <div class="search-item">
+                            <svg class="search-item-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clip-rule="evenodd"/>
+                            </svg>
+                            <div class="search-item-content">
+                                <div class="search-item-title">Project Planning Memo</div>
+                                <div class="search-item-subtitle">Created 2 days ago • Category: Work</div>
+                            </div>
+                        </div>
+                        <div class="search-item">
+                            <svg class="search-item-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                            <div class="search-item-content">
+                                <div class="search-item-title">Weekly Task Review</div>
+                                <div class="search-item-subtitle">Created yesterday • Category: Personal</div>
+                            </div>
+                        </div>
+                        <div class="search-item">
+                            <svg class="search-item-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div class="search-item-content">
+                                <div class="search-item-title">Meeting Notes - Q4 Planning</div>
+                                <div class="search-item-subtitle">Created 1 week ago • Category: Work</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section class="demo-section">
+            <h2 class="demo-title">📊 Data Table</h2>
+            <div class="component-card">
+                <h3 class="component-title">Sortable Data Table</h3>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-cell">
+                                    <input type="checkbox" class="checkbox-input" id="select-all">
+                                    <span class="checkbox-custom"></span>
+                                </th>
+                                <th class="sortable" data-sort="title">
+                                    <span>Title</span>
+                                    <span class="sort-icon"></span>
+                                </th>
+                                <th class="sortable" data-sort="priority">
+                                    <span>Priority</span>
+                                    <span class="sort-icon"></span>
+                                </th>
+                                <th class="sortable" data-sort="status">
+                                    <span>Status</span>
+                                    <span class="sort-icon"></span>
+                                </th>
+                                <th class="sortable" data-sort="created">
+                                    <span>Created</span>
+                                    <span class="sort-icon"></span>
+                                </th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="checkbox-cell">
+                                    <input type="checkbox" class="checkbox-input row-checkbox">
+                                    <span class="checkbox-custom"></span>
+                                </td>
+                                <td>Project Planning Memo</td>
+                                <td><span class="lozenge lozenge-warning">High</span></td>
+                                <td><span class="lozenge lozenge-success">Active</span></td>
+                                <td>2 days ago</td>
+                                <td>
+                                    <div class="table-actions">
+                                        <button class="btn btn-subtle btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr class="selected">
+                                <td class="checkbox-cell">
+                                    <input type="checkbox" class="checkbox-input row-checkbox" checked>
+                                    <span class="checkbox-custom"></span>
+                                </td>
+                                <td>Weekly Task Review</td>
+                                <td><span class="lozenge lozenge-info">Medium</span></td>
+                                <td><span class="lozenge lozenge-warning">In Progress</span></td>
+                                <td>Yesterday</td>
+                                <td>
+                                    <div class="table-actions">
+                                        <button class="btn btn-subtle btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="checkbox-cell">
+                                    <input type="checkbox" class="checkbox-input row-checkbox">
+                                    <span class="checkbox-custom"></span>
+                                </td>
+                                <td>Meeting Notes - Q4</td>
+                                <td><span class="lozenge lozenge-danger">Critical</span></td>
+                                <td><span class="lozenge lozenge-default">Draft</span></td>
+                                <td>1 week ago</td>
+                                <td>
+                                    <div class="table-actions">
+                                        <button class="btn btn-subtle btn-sm">Edit</button>
+                                        <button class="btn btn-danger btn-sm">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step Indicator -->
+        <section class="demo-section">
+            <h2 class="demo-title">📋 Step Indicator</h2>
+            <div class="component-card">
+                <h3 class="component-title">Progress Steps</h3>
+
+                <!-- Horizontal Stepper -->
+                <div class="stepper">
+                    <div class="step completed">
+                        <div class="step-circle">✓</div>
+                        <div class="step-content">
+                            <div class="step-title">Create Account</div>
+                            <div class="step-description">Set up your profile and preferences</div>
+                        </div>
+                    </div>
+                    <div class="step completed">
+                        <div class="step-circle">✓</div>
+                        <div class="step-content">
+                            <div class="step-title">Configure Settings</div>
+                            <div class="step-description">Customize your workspace</div>
+                        </div>
+                    </div>
+                    <div class="step active">
+                        <div class="step-circle">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Create Memo</div>
+                            <div class="step-description">Write your first memo</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-circle">4</div>
+                        <div class="step-content">
+                            <div class="step-title">Share & Collaborate</div>
+                            <div class="step-description">Invite team members</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vertical Stepper -->
+                <h4 style="margin-top: var(--space-500); margin-bottom: var(--space-300); color: var(--color-text);">Vertical Layout</h4>
+                <div class="stepper stepper-vertical">
+                    <div class="step completed">
+                        <div class="step-circle">✓</div>
+                        <div class="step-content">
+                            <div class="step-title">Planning Phase</div>
+                            <div class="step-description">Define project scope and objectives</div>
+                        </div>
+                    </div>
+                    <div class="step active">
+                        <div class="step-circle">2</div>
+                        <div class="step-content">
+                            <div class="step-title">Development Phase</div>
+                            <div class="step-description">Build and implement features</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-circle">3</div>
+                        <div class="step-content">
+                            <div class="step-title">Testing Phase</div>
+                            <div class="step-description">Quality assurance and bug fixes</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-circle">4</div>
+                        <div class="step-content">
+                            <div class="step-title">Deployment</div>
+                            <div class="step-description">Launch and monitor performance</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sidebar Navigation -->
+        <section class="demo-section">
+            <h2 class="demo-title">🗂️ Sidebar Navigation</h2>
+            <div class="component-card">
+                <h3 class="component-title">Navigation Sidebar</h3>
+                <div style="display: flex; height: 500px; border: var(--border-width-sm) solid var(--color-border); border-radius: var(--border-radius-md); overflow: hidden;">
+                    <div class="sidebar">
+                        <div class="sidebar-header">
+                            <div class="sidebar-logo">MemoApp</div>
+                        </div>
+
+                        <nav class="sidebar-nav">
+                            <div class="sidebar-group">
+                                <div class="sidebar-group-header">Main</div>
+                                <button class="sidebar-item active">
+                                    <svg class="sidebar-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-6 6A1 1 0 004 10v8a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1v-8a1 1 0 01.293-.707l6-6z"/>
+                                    </svg>
+                                    <span class="sidebar-text">Dashboard</span>
+                                </button>
+                                <button class="sidebar-item">
+                                    <svg class="sidebar-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="sidebar-text">Memos</span>
+                                    <span class="sidebar-badge">12</span>
+                                </button>
+                                <button class="sidebar-item">
+                                    <svg class="sidebar-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="sidebar-text">Tasks</span>
+                                    <span class="sidebar-badge">5</span>
+                                </button>
+                            </div>
+
+                            <div class="sidebar-group">
+                                <div class="sidebar-group-header">Organization</div>
+                                <button class="sidebar-item">
+                                    <svg class="sidebar-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="sidebar-text">Team</span>
+                                </button>
+                                <button class="sidebar-item">
+                                    <svg class="sidebar-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="sidebar-text">Reports</span>
+                                </button>
+                            </div>
+                        </nav>
+
+                        <div class="sidebar-footer">
+                            <div class="sidebar-user">
+                                <div class="sidebar-user-avatar">JD</div>
+                                <div class="sidebar-user-info">
+                                    <div class="sidebar-user-name">John Doe</div>
+                                    <div class="sidebar-user-role">Administrator</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="flex: 1; padding: var(--space-400); background-color: var(--color-surface);">
+                        <h3 style="margin-top: 0; color: var(--color-text);">Main Content Area</h3>
+                        <p style="color: var(--color-text-subtle);">This is where your main content would go. The sidebar provides easy navigation between different sections of your application.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Breadcrumb Navigation -->
+        <section class="demo-section">
+            <h2 class="demo-title">🍞 Breadcrumb Navigation</h2>
+            <div class="component-card">
+                <h3 class="component-title">Navigation Hierarchy</h3>
+                <nav aria-label="Breadcrumb navigation">
+                    <div class="breadcrumb">
+                        <ol class="breadcrumb-list">
+                            <li class="breadcrumb-item">
+                                <svg class="breadcrumb-home-icon" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-6 6A1 1 0 004 10v8a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1v-8a1 1 0 01.293-.707l6-6z"/>
+                                </svg>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <span class="breadcrumb-separator">/</span>
+                                <a href="#" class="breadcrumb-link">Dashboard</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <span class="breadcrumb-separator">/</span>
+                                <a href="#" class="breadcrumb-link">Memos</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <span class="breadcrumb-separator">/</span>
+                                <span class="breadcrumb-current">Project Planning</span>
+                            </li>
+                        </ol>
+                    </div>
+                </nav>
+            </div>
+        </section>
+
+        <!-- File Upload -->
+        <section class="demo-section">
+            <h2 class="demo-title">📎 File Upload</h2>
+            <div class="component-card">
+                <h3 class="component-title">Drag & Drop Upload</h3>
+                <div class="upload-area" id="upload-area">
+                    <input type="file" class="upload-input" id="file-input" multiple>
+                    <div class="upload-content">
+                        <svg class="upload-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <h3 class="upload-title">Drop files here or click to upload</h3>
+                        <p class="upload-description">Support for multiple files. Maximum size: 10MB per file.</p>
+                        <button class="btn btn-primary upload-button">Choose Files</button>
+                    </div>
+                </div>
+
+                <div class="upload-files" id="upload-files" style="display: none;">
+                    <h4 style="margin-top: 0; margin-bottom: var(--space-200); color: var(--color-text);">Uploaded Files</h4>
+                    <!-- Files will be added here by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Context Menu -->
+        <section class="demo-section">
+            <h2 class="demo-title">🎯 Context Menu</h2>
+            <div class="component-card">
+                <h3 class="component-title">Right-click Context Actions</h3>
+                <div style="padding: var(--space-400); border: var(--border-width-sm) solid var(--color-border); border-radius: var(--border-radius-md); text-align: center;">
+                    <p style="margin: 0; color: var(--color-text-subtle);">Right-click anywhere in this area to see the context menu</p>
+                    <div id="context-menu-demo" style="min-height: 200px; display: flex; align-items: center; justify-content: center; background-color: var(--color-surface-subtle); border-radius: var(--border-radius-md); margin-top: var(--space-200);">
+                        <span style="color: var(--color-text-subtle);">Context menu demo area</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter Panel -->
+        <section class="demo-section">
+            <h2 class="demo-title">🔍 Filter Panel</h2>
+            <div class="component-card">
+                <h3 class="component-title">Collapsible Filter Controls</h3>
+                <div class="filter-panel" id="filter-panel">
+                    <div class="filter-panel-header">
+                        <h3 class="filter-panel-title">Filters</h3>
+                        <button class="filter-panel-toggle" id="filter-toggle">
+                            <svg class="filter-panel-toggle-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="filter-panel-content">
+                        <div class="filter-section">
+                            <label class="filter-section-title" for="status-filter">Status</label>
+                            <div class="filter-group">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" class="checkbox-input" id="filter-active">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">Active</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" class="checkbox-input" id="filter-completed">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">Completed</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="checkbox" class="checkbox-input" id="filter-archived">
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">Archived</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <label class="filter-section-title" for="priority-filter">Priority</label>
+                            <div class="filter-group">
+                                <label class="radio-item">
+                                    <input type="radio" name="priority-filter" class="radio-input" value="high">
+                                    <span class="radio-custom"></span>
+                                    <span class="radio-text">High</span>
+                                </label>
+                                <label class="radio-item">
+                                    <input type="radio" name="priority-filter" class="radio-input" value="medium">
+                                    <span class="radio-custom"></span>
+                                    <span class="radio-text">Medium</span>
+                                </label>
+                                <label class="radio-item">
+                                    <input type="radio" name="priority-filter" class="radio-input" value="low">
+                                    <span class="radio-custom"></span>
+                                    <span class="radio-text">Low</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="filter-section">
+                            <label class="filter-section-title" for="date-range">Date Range</label>
+                            <div class="field-row">
+                                <div class="field-group">
+                                    <label for="date-from" style="display: block; font-size: var(--font-size-xs); color: var(--color-text-subtle); margin-bottom: var(--space-050);">From</label>
+                                    <input type="date" id="date-from" class="form-input" style="font-size: var(--font-size-sm);">
+                                </div>
+                                <div class="field-group">
+                                    <label for="date-to" style="display: block; font-size: var(--font-size-xs); color: var(--color-text-subtle); margin-bottom: var(--space-050);">To</label>
+                                    <input type="date" id="date-to" class="form-input" style="font-size: var(--font-size-sm);">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button class="btn btn-secondary">Clear All</button>
+                            <button class="btn btn-primary">Apply Filters</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Inline Editing -->
+        <section class="demo-section">
+            <h2 class="demo-title">✏️ Inline Editing</h2>
+            <div class="component-card">
+                <h3 class="component-title">Click to Edit Content</h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-300);">
+                    <div class="inline-edit" id="inline-edit-1">
+                        <div class="inline-edit-display" onclick="startInlineEdit('inline-edit-1')">
+                            <span class="inline-edit-content">Click here to edit this text inline</span>
+                        </div>
+                        <form class="inline-edit-form" style="display: none;" onsubmit="saveInlineEdit('inline-edit-1', event)">
+                            <input type="text" class="inline-edit-input" value="Click here to edit this text inline">
+                            <div class="inline-edit-actions">
+                                <button type="submit" class="inline-edit-save">
+                                    <svg class="inline-edit-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414 1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                <button type="button" class="inline-edit-cancel" onclick="cancelInlineEdit('inline-edit-1')">
+                                    <svg class="inline-edit-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="inline-edit" id="inline-edit-2">
+                        <div class="inline-edit-display" onclick="startInlineEdit('inline-edit-2')">
+                            <span class="inline-edit-content inline-edit-empty">Empty field - click to add content</span>
+                        </div>
+                        <form class="inline-edit-form" style="display: none;" onsubmit="saveInlineEdit('inline-edit-2', event)">
+                            <input type="text" class="inline-edit-input" placeholder="Enter some text...">
+                            <div class="inline-edit-actions">
+                                <button type="submit" class="inline-edit-save">
+                                    <svg class="inline-edit-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414 1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                <button type="button" class="inline-edit-cancel" onclick="cancelInlineEdit('inline-edit-2')">
+                                    <svg class="inline-edit-icon" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline -->
+        <section class="demo-section">
+            <h2 class="demo-title">📅 Timeline/Activity Feed</h2>
+            <div class="component-card">
+                <h3 class="component-title">Activity Timeline</h3>
+                <div class="timeline">
+                    <div class="timeline-item completed">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-card">
+                            <div class="timeline-header">
+                                <div class="timeline-avatar">JD</div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">John Doe created a new memo</div>
+                                    <div class="timeline-description">Project Planning Memo - Q4 2024</div>
+                                </div>
+                            </div>
+                            <div class="timeline-meta">2 hours ago</div>
+                            <div class="timeline-actions">
+                                <button class="btn btn-subtle btn-sm">View</button>
+                                <button class="btn btn-subtle btn-sm">Edit</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item completed">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-card">
+                            <div class="timeline-header">
+                                <div class="timeline-avatar">SA</div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Sarah added a comment</div>
+                                    <div class="timeline-description">"Great work on the initial draft! I've added some suggestions for the executive summary."</div>
+                                </div>
+                            </div>
+                            <div class="timeline-meta">4 hours ago</div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item active">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-card">
+                            <div class="timeline-header">
+                                <div class="timeline-avatar">MJ</div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Mike Johnson updated the memo</div>
+                                    <div class="timeline-description">Updated project timeline and added budget details</div>
+                                </div>
+                            </div>
+                            <div class="timeline-meta">6 hours ago</div>
+                            <div class="timeline-actions">
+                                <button class="btn btn-subtle btn-sm">View Changes</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item pending">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-card">
+                            <div class="timeline-header">
+                                <div class="timeline-avatar">LK</div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Lisa Kim scheduled review meeting</div>
+                                    <div class="timeline-description">Team review meeting scheduled for tomorrow at 2 PM</div>
+                                </div>
+                            </div>
+                            <div class="timeline-meta">Pending approval</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comments System -->
+        <section class="demo-section">
+            <h2 class="demo-title">💬 Comment Threading</h2>
+            <div class="component-card">
+                <h3 class="component-title">Discussion System</h3>
+                <div class="comments">
+                    <div class="comment">
+                        <div class="comment-header">
+                            <div class="comment-avatar">JD</div>
+                            <div>
+                                <div class="comment-author">John Doe</div>
+                                <div class="comment-timestamp">2 hours ago</div>
+                            </div>
+                        </div>
+                        <div class="comment-content">
+                            This is a great start! I have a few suggestions for the project timeline section.
+                        </div>
+                        <div class="comment-actions">
+                            <button class="comment-action">👍 Like</button>
+                            <button class="comment-action">💬 Reply</button>
+                            <button class="comment-action">⋯ More</button>
+                        </div>
+
+                        <div class="comment-thread">
+                            <div class="comment">
+                                <div class="comment-header">
+                                    <div class="comment-avatar">SA</div>
+                                    <div>
+                                        <div class="comment-author">Sarah Anderson</div>
+                                        <div class="comment-timestamp">1 hour ago</div>
+                                    </div>
+                                </div>
+                                <div class="comment-content">
+                                    Thanks John! I've incorporated your suggestions. Let me know what you think of the updated timeline.
+                                </div>
+                                <div class="comment-actions">
+                                    <button class="comment-action">👍 Like</button>
+                                    <button class="comment-action">💬 Reply</button>
+                                </div>
+                            </div>
+
+                            <div class="comment-reply-form">
+                                <textarea class="comment-input" placeholder="Write a reply..."></textarea>
+                                <div class="comment-submit">
+                                    <button class="btn btn-secondary">Cancel</button>
+                                    <button class="btn btn-primary">Reply</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="comment">
+                        <div class="comment-header">
+                            <div class="comment-avatar">MJ</div>
+                            <div>
+                                <div class="comment-author">Mike Johnson</div>
+                                <div class="comment-timestamp">30 minutes ago</div>
+                            </div>
+                        </div>
+                        <div class="comment-content">
+                            The budget breakdown looks comprehensive. One question about the contingency allocation - should we increase it to 15%?
+                        </div>
+                        <div class="comment-actions">
+                            <button class="comment-action">👍 Like</button>
+                            <button class="comment-action">💬 Reply</button>
+                            <button class="comment-action">⋯ More</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Notification Bell -->
+        <section class="demo-section">
+            <h2 class="demo-title">🔔 Notification Bell</h2>
+            <div class="component-card">
+                <h3 class="component-title">Notification Dropdown</h3>
+                <div style="display: flex; justify-content: center; padding: var(--space-400);">
+                    <div class="notification-bell" id="notification-bell">
+                        <button class="btn btn-secondary">
+                            <span>🔔 Notifications</span>
+                            <span class="notification-badge">3</span>
+                        </button>
+                        <div class="notification-dropdown hidden" id="notification-dropdown">
+                            <div class="notification-header">Notifications</div>
+                            <ul class="notification-list">
+                                <li class="notification-item unread">
+                                    <div class="notification-content">
+                                        <div class="notification-title">New comment on your memo</div>
+                                        <div class="notification-message">Sarah Anderson replied to your comment on "Project Planning Memo"</div>
+                                        <div class="notification-time">5 minutes ago</div>
+                                    </div>
+                                </li>
+                                <li class="notification-item unread">
+                                    <div class="notification-content">
+                                        <div class="notification-title">Memo shared with you</div>
+                                        <div class="notification-message">Mike Johnson shared "Q4 Budget Review" with you</div>
+                                        <div class="notification-time">1 hour ago</div>
+                                    </div>
+                                </li>
+                                <li class="notification-item">
+                                    <div class="notification-content">
+                                        <div class="notification-title">Meeting reminder</div>
+                                        <div class="notification-message">Team standup in 15 minutes</div>
+                                        <div class="notification-time">2 hours ago</div>
+                                    </div>
+                                </li>
+                            </ul>
+                            <div class="notification-footer">
+                                <button class="notification-view-all">View all notifications</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Panel -->
+        <section class="demo-section">
+            <h2 class="demo-title">⚙️ Settings Panel</h2>
+            <div class="component-card">
+                <h3 class="component-title">Application Settings</h3>
+                <div class="settings-panel">
+                    <div class="settings-section">
+                        <div class="settings-section-header">
+                            <h3 class="settings-section-title">Notifications</h3>
+                            <p class="settings-section-description">Manage how you receive notifications and updates</p>
+                        </div>
+                        <div class="settings-section-content">
+                            <div class="settings-item">
+                                <div class="settings-item-content">
+                                    <div class="settings-item-title">Email notifications</div>
+                                    <div class="settings-item-description">Receive email notifications for important updates</div>
+                                </div>
+                                <div class="settings-item-control">
+                                    <label class="toggle">
+                                        <input type="checkbox" class="toggle-input" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="settings-item">
+                                <div class="settings-item-content">
+                                    <div class="settings-item-title">Push notifications</div>
+                                    <div class="settings-item-description">Get instant notifications in your browser</div>
+                                </div>
+                                <div class="settings-item-control">
+                                    <label class="toggle">
+                                        <input type="checkbox" class="toggle-input" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="settings-item">
+                                <div class="settings-item-content">
+                                    <div class="settings-item-title">Weekly digest</div>
+                                    <div class="settings-item-description">Receive a weekly summary of your activity</div>
+                                </div>
+                                <div class="settings-item-control">
+                                    <label class="toggle">
+                                        <input type="checkbox" class="toggle-input">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <div class="settings-section-header">
+                            <h3 class="settings-section-title">Appearance</h3>
+                            <p class="settings-section-description">Customize the look and feel of your workspace</p>
+                        </div>
+                        <div class="settings-section-content">
+                            <div class="settings-item">
+                                <div class="settings-item-content">
+                                    <div class="settings-item-title">Theme</div>
+                                    <div class="settings-item-description">Choose your preferred color scheme</div>
+                                </div>
+                                <div class="settings-item-control">
+                                    <select class="form-input" style="width: 150px;">
+                                        <option>Light</option>
+                                        <option>Dark</option>
+                                        <option>Auto</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="settings-item">
+                                <div class="settings-item-content">
+                                    <div class="settings-item-title">Compact mode</div>
+                                    <div class="settings-item-description">Use a more compact layout to fit more content</div>
+                                </div>
+                                <div class="settings-item-control">
+                                    <label class="toggle">
+                                        <input type="checkbox" class="toggle-input">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <div class="settings-section-header">
+                            <h3 class="settings-section-title">Privacy & Security</h3>
+                            <p class="settings-section-description">Control your privacy and security preferences</p>
+                        </div>
+                        <div class="settings-section-content">
+                            <div class="settings-item">
+                                <div class="settings-item-content">
+                                    <div class="settings-item-title">Two-factor authentication</div>
+                                    <div class="settings-item-description">Add an extra layer of security to your account</div>
+                                </div>
+                                <div class="settings-item-control">
+                                    <button class="btn btn-primary btn-sm">Enable</button>
+                                </div>
+                            </div>
+
+                            <div class="settings-item">
+                                <div class="settings-item-content">
+                                    <div class="settings-item-title">Session timeout</div>
+                                    <div class="settings-item-description">Automatically log out after period of inactivity</div>
+                                </div>
+                                <div class="settings-item-control">
+                                    <select class="form-input" style="width: 120px;">
+                                        <option>30 minutes</option>
+                                        <option>1 hour</option>
+                                        <option>2 hours</option>
+                                        <option>Never</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Keyboard Shortcuts -->
+        <section class="demo-section">
+            <h2 class="demo-title">⌨️ Keyboard Shortcuts</h2>
+            <div class="component-card">
+                <h3 class="component-title">Help Modal with Shortcuts</h3>
+                <div style="text-align: center; padding: var(--space-400);">
+                    <button class="btn btn-primary" onclick="openKeyboardShortcuts()">Show Keyboard Shortcuts</button>
+                </div>
+            </div>
+        </section>
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="keyboard-shortcuts-modal" class="modal-overlay hidden">
+        <div class="modal-container keyboard-shortcuts-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Keyboard Shortcuts</h2>
+                <button class="modal-close" onclick="closeKeyboardShortcuts()" aria-label="Close shortcuts">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcuts-content">
+                    <div class="shortcuts-category">
+                        <div class="shortcuts-category-title">Navigation</div>
+                        <div class="shortcuts-list">
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Ctrl</span>
+                                    <span class="shortcut-plus">+</span>
+                                    <span class="shortcut-key">N</span>
+                                </div>
+                                <p class="shortcut-description">Create new memo</p>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Ctrl</span>
+                                    <span class="shortcut-plus">+</span>
+                                    <span class="shortcut-key">K</span>
+                                </div>
+                                <p class="shortcut-description">Search memos</p>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Ctrl</span>
+                                    <span class="shortcut-plus">+</span>
+                                    <span class="shortcut-key">/</span>
+                                </div>
+                                <p class="shortcut-description">Show shortcuts</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="shortcuts-category">
+                        <div class="shortcuts-category-title">Editing</div>
+                        <div class="shortcuts-list">
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Ctrl</span>
+                                    <span class="shortcut-plus">+</span>
+                                    <span class="shortcut-key">S</span>
+                                </div>
+                                <p class="shortcut-description">Save memo</p>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Ctrl</span>
+                                    <span class="shortcut-plus">+</span>
+                                    <span class="shortcut-key">Z</span>
+                                </div>
+                                <p class="shortcut-description">Undo</p>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Ctrl</span>
+                                    <span class="shortcut-plus">+</span>
+                                    <span class="shortcut-key">Y</span>
+                                </div>
+                                <p class="shortcut-description">Redo</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="shortcuts-category">
+                        <div class="shortcuts-category-title">Memo Management</div>
+                        <div class="shortcuts-list">
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Ctrl</span>
+                                    <span class="shortcut-plus">+</span>
+                                    <span class="shortcut-key">E</span>
+                                </div>
+                                <p class="shortcut-description">Edit current memo</p>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Delete</span>
+                                </div>
+                                <p class="shortcut-description">Delete memo</p>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Ctrl</span>
+                                    <span class="shortcut-plus">+</span>
+                                    <span class="shortcut-key">D</span>
+                                </div>
+                                <p class="shortcut-description">Duplicate memo</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="shortcuts-category">
+                        <div class="shortcuts-category-title">View & Navigation</div>
+                        <div class="shortcuts-list">
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Esc</span>
+                                </div>
+                                <p class="shortcut-description">Close modal or cancel action</p>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">Tab</span>
+                                </div>
+                                <p class="shortcut-description">Navigate between elements</p>
+                            </div>
+                            <div class="shortcut-item">
+                                <div class="shortcut-keys">
+                                    <span class="shortcut-key">↑</span>
+                                    <span class="shortcut-key">↓</span>
+                                </div>
+                                <p class="shortcut-description">Navigate lists</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeKeyboardShortcuts()">Got it</button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-small" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">Small Modal</h2>
+                <button class="modal-close" onclick="closeModal('small')" aria-label="Close modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>This is a small modal dialog. It demonstrates the basic modal structure with header, body, and footer.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('small')">Cancel</button>
+                <button class="btn btn-primary" onclick="closeModal('small')">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-medium" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">Medium Modal</h2>
+                <button class="modal-close" onclick="closeModal('medium')" aria-label="Close modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>This is a medium-sized modal that provides more space for content. It follows Atlassian's design patterns for modal dialogs.</p>
+                <p>Modals are used for focused interactions, forms, or important confirmations that require the user's full attention.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-link" onclick="closeModal('medium')">Skip</button>
+                <button class="btn btn-secondary" onclick="closeModal('medium')">Cancel</button>
+                <button class="btn btn-primary" onclick="closeModal('medium')">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-large" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 class="modal-title">Large Modal</h2>
+                <button class="modal-close" onclick="closeModal('large')" aria-label="Close modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <h3>Atlassian Design System Components</h3>
+                <p>The Atlassian Design System provides a comprehensive set of components that ensure consistency across all Atlassian products.</p>
+
+                <h4>Key Principles:</h4>
+                <ul>
+                    <li><strong>Consistency:</strong> All components follow the same design patterns</li>
+                    <li><strong>Accessibility:</strong> Components are built with accessibility in mind</li>
+                    <li><strong>Scalability:</strong> Components work across different screen sizes</li>
+                    <li><strong>Performance:</strong> Optimized for fast loading and smooth interactions</li>
+                </ul>
+
+                <h4>Components Included:</h4>
+                <ul>
+                    <li>Buttons (Primary, Secondary, Subtle, Link, Warning, Danger)</li>
+                    <li>Forms with validation states</li>
+                    <li>Modals and dialogs</li>
+                    <li>Banners and notifications</li>
+                    <li>Lozenge status indicators</li>
+                    <li>Loading states and skeletons</li>
+                    <li>Dropdown menus</li>
+                    <li>Tooltips</li>
+                    <li>Avatars</li>
+                    <li>Progress bars and indicators</li>
+                    <li>Toggle switches</li>
+                    <li>Enhanced radio buttons and checkboxes</li>
+                    <li>Pagination controls</li>
+                    <li>Toast notification system</li>
+                    <li>Enhanced badges</li>
+                    <li>Navigation components</li>
+                    <li>Date picker with calendar</li>
+                    <li>Enhanced search with autocomplete</li>
+                    <li>Sortable data tables</li>
+                    <li>Step indicators and progress flows</li>
+                    <li>Sidebar navigation</li>
+                    <li>Breadcrumb navigation</li>
+                    <li>File upload with drag & drop</li>
+                    <li>Context menus</li>
+                    <li>Filter panels</li>
+                    <li>Inline editing components</li>
+                    <li>Timeline/activity feeds</li>
+                    <li>Comment threading system</li>
+                    <li>Notification bell dropdown</li>
+                    <li>Settings panels</li>
+                    <li>Keyboard shortcuts modal</li>
+                    <li>And many more...</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('large')">Close</button>
+                <button class="btn btn-primary" onclick="closeModal('large')">Got it</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Modal functionality
+        function openModal(size) {
+            const modal = document.getElementById(`modal-${size}`);
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal(size) {
+            const modal = document.getElementById(`modal-${size}`);
+            modal.classList.add('hidden');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                event.target.classList.add('hidden');
+            }
+        });
+
+        // Dropdown functionality
+        const dropdownTrigger = document.querySelector('.dropdown-trigger');
+        const dropdownMenu = document.querySelector('.dropdown-menu');
+
+        dropdownTrigger.addEventListener('click', function() {
+            const isVisible = dropdownMenu.style.display === 'block';
+            dropdownMenu.style.display = isVisible ? 'none' : 'block';
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.dropdown')) {
+                dropdownMenu.style.display = 'none';
+            }
+        });
+
+        // Tab functionality
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // Toast notification functionality
+        function showToast(type) {
+            const toastContainer = document.getElementById('toast-container');
+
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+
+            const iconMap = {
+                success: '✓',
+                warning: '⚠',
+                error: '✕',
+                info: 'ℹ'
+            };
+
+            const titleMap = {
+                success: 'Success',
+                warning: 'Warning',
+                error: 'Error',
+                info: 'Information'
+            };
+
+            const messageMap = {
+                success: 'Operation completed successfully!',
+                warning: 'Please review the information carefully.',
+                error: 'An error occurred. Please try again.',
+                info: 'Here is some important information.'
+            };
+
+            toast.innerHTML = `
+                <div class="toast-icon">${iconMap[type]}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${titleMap[type]}</div>
+                    <div class="toast-description">${messageMap[type]}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()" aria-label="Close notification">✕</button>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.classList.add('hide');
+                    setTimeout(() => {
+                        if (toast.parentElement) {
+                            toast.parentElement.removeChild(toast);
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+
+        // Enhanced dropdown functionality
+        document.addEventListener('click', function(event) {
+            // Close dropdowns when clicking outside
+            if (!event.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+            }
+
+            // Handle dropdown trigger clicks
+            const trigger = event.target.closest('.dropdown-trigger');
+            if (trigger) {
+                const dropdown = trigger.closest('.dropdown');
+                const menu = dropdown.querySelector('.dropdown-menu');
+                const isVisible = menu.style.display === 'block';
+                menu.style.display = isVisible ? 'none' : 'block';
+            }
+
+            // Handle dropdown item clicks
+            const item = event.target.closest('.dropdown-item');
+            if (item && !item.disabled) {
+                const dropdown = item.closest('.dropdown');
+                const menu = dropdown.querySelector('.dropdown-menu');
+                menu.style.display = 'none';
+                console.log('Selected:', item.textContent.trim());
+            }
+        });
+
+        // Date picker functionality
+        function initializeDatePicker() {
+            const dateInput = document.getElementById('demo-datepicker');
+            const datePopup = document.getElementById('datepicker-popup');
+            const monthYearDisplay = document.getElementById('datepicker-month-year');
+            const prevBtn = document.getElementById('datepicker-prev');
+            const nextBtn = document.getElementById('datepicker-next');
+            const dateGrid = document.getElementById('datepicker-grid');
+
+            let currentDate = new Date();
+            let selectedDate = null;
+
+            function renderCalendar() {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+
+                monthYearDisplay.textContent = currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+
+                dateGrid.innerHTML = '';
+
+                // Add weekday headers
+                const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+                weekdays.forEach(day => {
+                    const dayEl = document.createElement('div');
+                    dayEl.className = 'datepicker-weekday';
+                    dayEl.textContent = day;
+                    dateGrid.appendChild(dayEl);
+                });
+
+                // Get first day of month and last day of month
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const startDate = new Date(firstDay);
+                startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+                // Render 6 weeks
+                for (let i = 0; i < 42; i++) {
+                    const date = new Date(startDate);
+                    date.setDate(startDate.getDate() + i);
+
+                    const dayEl = document.createElement('button');
+                    dayEl.className = 'datepicker-day';
+                    dayEl.textContent = date.getDate();
+
+                    if (date.getMonth() !== month) {
+                        dayEl.classList.add('outside');
+                    }
+
+                    if (date.toDateString() === new Date().toDateString()) {
+                        dayEl.classList.add('today');
+                    }
+
+                    if (selectedDate && date.toDateString() === selectedDate.toDateString()) {
+                        dayEl.classList.add('selected');
+                    }
+
+                    dayEl.addEventListener('click', () => {
+                        selectedDate = new Date(date);
+                        dateInput.value = selectedDate.toLocaleDateString();
+                        datePopup.classList.add('hidden');
+                        renderCalendar();
+                    });
+
+                    dateGrid.appendChild(dayEl);
+                }
+            }
+
+            dateInput.addEventListener('click', () => {
+                datePopup.classList.toggle('hidden');
+                renderCalendar();
+            });
+
+            prevBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+
+            nextBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!dateInput.contains(e.target) && !datePopup.contains(e.target)) {
+                    datePopup.classList.add('hidden');
+                }
+            });
+        }
+
+        // Enhanced search functionality
+        function initializeSearch() {
+            const searchInput = document.getElementById('demo-search');
+            const searchResults = document.getElementById('search-results');
+
+            searchInput.addEventListener('focus', () => {
+                searchResults.classList.add('show');
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const items = searchResults.querySelectorAll('.search-item');
+
+                items.forEach(item => {
+                    const title = item.querySelector('.search-item-title').textContent.toLowerCase();
+                    const subtitle = item.querySelector('.search-item-subtitle').textContent.toLowerCase();
+
+                    if (title.includes(query) || subtitle.includes(query) || query === '') {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                // Show "no results" if all items are hidden and there's a query
+                const visibleItems = Array.from(items).filter(item => item.style.display !== 'none');
+                if (visibleItems.length === 0 && query !== '') {
+                    if (!searchResults.querySelector('.search-no-results')) {
+                        const noResults = document.createElement('div');
+                        noResults.className = 'search-no-results';
+                        noResults.textContent = 'No results found';
+                        searchResults.appendChild(noResults);
+                    }
+                } else {
+                    const noResults = searchResults.querySelector('.search-no-results');
+                    if (noResults) noResults.remove();
+                }
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.classList.remove('show');
+                }
+            });
+        }
+
+        // Table sorting functionality
+        function initializeTableSorting() {
+            const table = document.querySelector('.table');
+            const headers = table.querySelectorAll('th.sortable');
+            let sortDirection = {};
+
+            headers.forEach(header => {
+                const sortKey = header.dataset.sort;
+                sortDirection[sortKey] = 'asc';
+
+                header.addEventListener('click', () => {
+                    // Toggle sort direction
+                    sortDirection[sortKey] = sortDirection[sortKey] === 'asc' ? 'desc' : 'asc';
+
+                    // Update sort icons
+                    headers.forEach(h => {
+                        h.classList.remove('sort-asc', 'sort-desc');
+                    });
+                    header.classList.add(`sort-${sortDirection[sortKey]}`);
+
+                    // Sort table rows
+                    const tbody = table.querySelector('tbody');
+                    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                    rows.sort((a, b) => {
+                        let aVal, bVal;
+
+                        switch (sortKey) {
+                            case 'title':
+                                aVal = a.cells[1].textContent.toLowerCase();
+                                bVal = b.cells[1].textContent.toLowerCase();
+                                break;
+                            case 'priority':
+                                const priorityOrder = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'None': 0 };
+                                aVal = priorityOrder[a.cells[2].querySelector('.lozenge').textContent] || 0;
+                                bVal = priorityOrder[b.cells[2].querySelector('.lozenge').textContent] || 0;
+                                break;
+                            case 'status':
+                                aVal = a.cells[3].querySelector('.lozenge').textContent.toLowerCase();
+                                bVal = b.cells[3].querySelector('.lozenge').textContent.toLowerCase();
+                                break;
+                            case 'created':
+                                aVal = a.cells[4].textContent.toLowerCase();
+                                bVal = b.cells[4].textContent.toLowerCase();
+                                break;
+                            default:
+                                return 0;
+                        }
+
+                        if (sortDirection[sortKey] === 'asc') {
+                            return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                        } else {
+                            return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                        }
+                    });
+
+                    // Re-append sorted rows
+                    rows.forEach(row => tbody.appendChild(row));
+                });
+            });
+
+            // Select all functionality
+            const selectAllCheckbox = document.getElementById('select-all');
+            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+
+            selectAllCheckbox.addEventListener('change', (e) => {
+                rowCheckboxes.forEach(checkbox => {
+                    checkbox.checked = e.target.checked;
+                    checkbox.closest('tr').classList.toggle('selected', e.target.checked);
+                });
+            });
+
+            rowCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const allChecked = Array.from(rowCheckboxes).every(cb => cb.checked);
+                    const someChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
+
+                    selectAllCheckbox.checked = allChecked;
+                    selectAllCheckbox.indeterminate = someChecked && !allChecked;
+
+                    checkbox.closest('tr').classList.toggle('selected', checkbox.checked);
+                });
+            });
+        }
+
+        // Sidebar functionality
+        function initializeSidebar() {
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+
+            sidebarItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    sidebarItems.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                });
+            });
+        }
+
+        // Initialize all components
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDatePicker();
+            initializeSearch();
+            initializeTableSorting();
+            initializeSidebar();
+            initializeFileUpload();
+            initializeContextMenu();
+            initializeFilterPanel();
+            initializeInlineEditing();
+            initializeNotificationBell();
+        });
+
+        // Notification bell functionality
+        function initializeNotificationBell() {
+            const notificationBtn = document.querySelector('#notification-bell button');
+            const notificationDropdown = document.getElementById('notification-dropdown');
+
+            notificationBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = !notificationDropdown.classList.contains('hidden');
+                notificationDropdown.classList.toggle('hidden', isVisible);
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                    notificationDropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        // Keyboard shortcuts modal functionality
+        function openKeyboardShortcuts() {
+            const modal = document.getElementById('keyboard-shortcuts-modal');
+            modal.classList.remove('hidden');
+        }
+
+        function closeKeyboardShortcuts() {
+            const modal = document.getElementById('keyboard-shortcuts-modal');
+            modal.classList.add('hidden');
+        }
+
+        // Close keyboard shortcuts modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('keyboard-shortcuts-modal');
+            if (event.target === modal) {
+                closeKeyboardShortcuts();
+            }
+        });
+
+        // File upload functionality
+        function initializeFileUpload() {
+            const uploadArea = document.getElementById('upload-area');
+            const fileInput = document.getElementById('file-input');
+            const uploadFiles = document.getElementById('upload-files');
+
+            // Drag and drop functionality
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            uploadArea.addEventListener('drop', handleDrop, false);
+            fileInput.addEventListener('change', handleFileSelect, false);
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function highlight() {
+                uploadArea.classList.add('dragover');
+            }
+
+            function unhighlight() {
+                uploadArea.classList.remove('dragover');
+            }
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files);
+            }
+
+            function handleFileSelect(e) {
+                const files = e.target.files;
+                handleFiles(files);
+            }
+
+            function handleFiles(files) {
+                [...files].forEach(previewFile);
+                uploadFiles.style.display = 'block';
+            }
+
+            function previewFile(file) {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'upload-file';
+
+                const formatFileSize = (bytes) => {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                };
+
+                fileItem.innerHTML = `
+                    <div class="upload-file-info">
+                        <div class="upload-file-name">${file.name}</div>
+                        <div class="upload-file-size">${formatFileSize(file.size)}</div>
+                    </div>
+                    <div class="upload-file-progress">
+                        <div class="progress">
+                            <div class="progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="upload-file-actions">
+                        <button class="upload-file-remove" onclick="this.closest('.upload-file').remove()" aria-label="Remove file">✕</button>
+                    </div>
+                `;
+
+                uploadFiles.appendChild(fileItem);
+
+                // Simulate upload progress
+                let progress = 0;
+                const progressBar = fileItem.querySelector('.progress-fill');
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(interval);
+                    }
+                    progressBar.style.width = progress + '%';
+                }, 200);
+            }
+        }
+
+        // Context menu functionality
+        function initializeContextMenu() {
+            const contextMenuDemo = document.getElementById('context-menu-demo');
+            let contextMenu = null;
+
+            contextMenuDemo.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+
+                // Remove existing context menu
+                if (contextMenu) {
+                    document.body.removeChild(contextMenu);
+                }
+
+                // Create new context menu
+                contextMenu = document.createElement('div');
+                contextMenu.className = 'context-menu';
+                contextMenu.style.left = e.pageX + 'px';
+                contextMenu.style.top = e.pageY + 'px';
+
+                contextMenu.innerHTML = `
+                    <button class="context-menu-item">
+                        <svg class="context-menu-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                        </svg>
+                        <span class="context-menu-text">Edit</span>
+                        <span class="context-menu-shortcut">Ctrl+E</span>
+                    </button>
+                    <button class="context-menu-item">
+                        <svg class="context-menu-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>
+                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/>
+                        </svg>
+                        <span class="context-menu-text">Copy</span>
+                        <span class="context-menu-shortcut">Ctrl+C</span>
+                    </button>
+                    <div class="context-menu-separator"></div>
+                    <button class="context-menu-item">
+                        <svg class="context-menu-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l2-2z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="context-menu-text">Share</span>
+                    </button>
+                    <button class="context-menu-item danger">
+                        <svg class="context-menu-icon" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd"/>
+                            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 11-2 0h-3a1 1 0 01-1-1V6a1 1 0 011-1z" clip-rule="evenodd"/>
+                            <path d="M4 9a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z"/>
+                        </svg>
+                        <span class="context-menu-text">Delete</span>
+                        <span class="context-menu-shortcut">Del</span>
+                    </button>
+                `;
+
+                document.body.appendChild(contextMenu);
+
+                // Position the menu within viewport
+                const rect = contextMenu.getBoundingClientRect();
+                if (rect.right > window.innerWidth) {
+                    contextMenu.style.left = (e.pageX - rect.width) + 'px';
+                }
+                if (rect.bottom > window.innerHeight) {
+                    contextMenu.style.top = (e.pageY - rect.height) + 'px';
+                }
+            });
+
+            // Close context menu when clicking elsewhere
+            document.addEventListener('click', () => {
+                if (contextMenu) {
+                    document.body.removeChild(contextMenu);
+                    contextMenu = null;
+                }
+            });
+        }
+
+        // Filter panel functionality
+        function initializeFilterPanel() {
+            const filterPanel = document.getElementById('filter-panel');
+            const filterToggle = document.getElementById('filter-toggle');
+
+            filterToggle.addEventListener('click', () => {
+                filterPanel.classList.toggle('collapsed');
+            });
+        }
+
+        // Inline editing functionality
+        function initializeInlineEditing() {
+            // Functions are defined globally for onclick handlers
+            window.startInlineEdit = function(id) {
+                const container = document.getElementById(id);
+                const display = container.querySelector('.inline-edit-display');
+                const form = container.querySelector('.inline-edit-form');
+
+                display.style.display = 'none';
+                form.style.display = 'flex';
+
+                const input = form.querySelector('.inline-edit-input');
+                input.focus();
+                input.select();
+            };
+
+            window.saveInlineEdit = function(id, event) {
+                event.preventDefault();
+                const container = document.getElementById(id);
+                const display = container.querySelector('.inline-edit-display');
+                const form = container.querySelector('.inline-edit-form');
+                const input = form.querySelector('.inline-edit-input');
+                const content = display.querySelector('.inline-edit-content');
+
+                content.textContent = input.value || 'Empty field - click to add content';
+                content.classList.toggle('inline-edit-empty', !input.value);
+
+                display.style.display = 'flex';
+                form.style.display = 'none';
+            };
+
+            window.cancelInlineEdit = function(id) {
+                const container = document.getElementById(id);
+                const display = container.querySelector('.inline-edit-display');
+                const form = container.querySelector('.inline-edit-form');
+
+                display.style.display = 'flex';
+                form.style.display = 'none';
+            };
+        }
+    </script>
+</html>

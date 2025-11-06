@@ -1,0 +1,136 @@
+# Production Docker Compose Configuration
+# =====================================
+# Enterprise Memo Management System
+# Designed for high-availability production deployment
+
+version: '3.8'
+
+services:
+  # Main memo system service
+  memo-system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: memo-system
+    restart: unless-stopped
+
+    environment:
+      MEMO_ENV: production
+      MEMO_LOG_LEVEL: INFO
+      MEMO_DB_PATH: /app/data/memos.db
+      MEMO_BACKUP_DIR: /app/backups
+      MEMO_LOG_DIR: /app/logs
+      MEMO_ENCRYPTION: "true"
+      MEMO_AUDIT: "true"
+      MEMO_MONITORING: "true"
+      MEMO_LANG: ${MEMO_LANG:-en}
+
+    volumes:
+      - memo_data:/app/data
+      - memo_logs:/app/logs
+      - memo_backups:/app/backups
+
+    networks:
+      - memo-network
+
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import sqlite3, os; conn = sqlite3.connect(os.environ.get('MEMO_DB_PATH', '/app/data/memos.db')); conn.execute('SELECT 1'); conn.close(); print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Monitoring and alerting service
+  memo-monitoring:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: memo-monitoring
+    restart: unless-stopped
+    command: ["python3", "monitoring_alerting.py", "--daemon"]
+
+    environment:
+      MEMO_ENV: production
+      MEMO_LOG_LEVEL: INFO
+      MEMO_DB_PATH: /app/data/memos.db
+
+    volumes:
+      - memo_data:/app/data:ro
+      - memo_logs:/app/logs
+      - monitoring_data:/app/monitoring
+
+    networks:
+      - memo-network
+
+    depends_on:
+      - memo-system
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Backup service for scheduled backups
+  memo-backup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: memo-backup
+    restart: unless-stopped
+    command: ["python3", "backup_ultimate.py", "--schedule"]
+
+    environment:
+      MEMO_ENV: production
+      MEMO_LOG_LEVEL: INFO
+      MEMO_BACKUP_SOURCE: /app/data
+      MEMO_BACKUP_DEST: /app/backups
+      MEMO_BACKUP_INTERVAL: 24h
+
+    volumes:
+      - memo_data:/app/data:ro
+      - memo_backups:/app/backups
+      - memo_logs:/app/logs
+
+    networks:
+      - memo-network
+
+    depends_on:
+      - memo-system
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+# Named volumes for data persistence
+volumes:
+  memo_data:
+    driver: local
+  memo_logs:
+    driver: local
+  memo_backups:
+    driver: local
+  monitoring_data:
+    driver: local
+
+# Networks
+networks:
+  memo-network:
+    driver: bridge

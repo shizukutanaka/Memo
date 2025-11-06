@@ -1,0 +1,1066 @@
+openapi: 3.0.3
+info:
+  title: Memo System API
+  description: |
+    Enterprise-grade memo management system with advanced security,
+    multi-language support, and comprehensive backup capabilities.
+
+    ## Features
+    - **Secure Memo Management**: AES-256 encryption, access control
+    - **Multi-language Support**: 50+ languages with auto-translation
+    - **Advanced Backup**: Incremental, cloud storage, integrity verification
+    - **Plugin System**: Extensible architecture
+    - **Real-time Monitoring**: Performance dashboards and alerting
+  version: "1.0.0"
+  contact:
+    name: Memo System Team
+    email: support@memo-system.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.memo-system.com/v1
+    description: Production server
+  - url: http://localhost:5000/v1
+    description: Local development server
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT Bearer token authentication
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key authentication
+
+  schemas:
+    Memo:
+      type: object
+      required:
+        - id
+        - content
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique memo identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        content:
+          type: string
+          description: Memo content (encrypted if security level > 1)
+          example: "Meeting notes for Q1 planning"
+        category:
+          type: string
+          default: "general"
+          enum: ["general", "work", "personal", "ideas", "tasks"]
+          example: "work"
+        tags:
+          type: array
+          items:
+            type: string
+          description: Memo tags for organization
+          example: ["meeting", "planning", "urgent"]
+        status:
+          type: string
+          enum: ["active", "completed", "archived"]
+          default: "active"
+          example: "active"
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 3
+          default: 0
+          description: Priority level (0=low, 3=urgent)
+          example: 2
+        security_level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 1
+          description: Security classification level
+          example: 2
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-01-15T14:20:00Z"
+        checksum:
+          type: string
+          description: Content integrity checksum
+          example: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
+
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - email
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "456e7890-e89b-12d3-a456-426614174001"
+        username:
+          type: string
+          minLength: 3
+          maxLength: 32
+          example: "johndoe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        role:
+          type: string
+          enum: ["user", "admin", "moderator"]
+          default: "user"
+          example: "user"
+        language:
+          type: string
+          description: Preferred language code
+          default: "en"
+          example: "ja"
+        created_at:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+
+    Backup:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Backup identifier
+        type:
+          type: string
+          enum: ["full", "incremental"]
+        timestamp:
+          type: string
+          format: date-time
+        size_bytes:
+          type: integer
+          description: Backup file size in bytes
+        checksum:
+          type: string
+          description: Backup integrity checksum
+        location:
+          type: string
+          enum: ["local", "aws", "azure", "gcp"]
+          description: Backup storage location
+        status:
+          type: string
+          enum: ["pending", "running", "completed", "failed"]
+        download_url:
+          type: string
+          format: uri
+          description: Temporary download URL for the backup
+
+    PluginInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "ai_assistant"
+        version:
+          type: string
+          example: "1.0.0"
+        description:
+          type: string
+          example: "AI-powered memo assistant"
+        author:
+          type: string
+          example: "Memo Team"
+        enabled:
+          type: boolean
+          default: false
+        loaded:
+          type: boolean
+          default: false
+        dependencies:
+          type: array
+          items:
+            type: string
+          example: ["openai", "transformers"]
+
+    SystemMetrics:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        cpu_percent:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 45.2
+        memory_percent:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 67.8
+        disk_usage_percent:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 78.3
+        database_size_mb:
+          type: number
+          example: 256.5
+        total_memos:
+          type: integer
+          example: 15420
+        active_users:
+          type: integer
+          example: 1250
+        active_sessions:
+          type: integer
+          example: 340
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          example: "Memo content cannot be empty"
+        details:
+          type: object
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+
+  parameters:
+    MemoId:
+      name: memo_id
+      in: path
+      required: true
+      description: Unique memo identifier
+      schema:
+        type: string
+        format: uuid
+
+    Limit:
+      name: limit
+      in: query
+      description: Maximum number of items to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 50
+
+    Offset:
+      name: offset
+      in: query
+      description: Number of items to skip
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    Language:
+      name: language
+      in: query
+      description: Response language
+      schema:
+        type: string
+        default: "en"
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+paths:
+  /memos:
+    get:
+      summary: List memos
+      description: Retrieve a paginated list of memos with optional filtering
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: category
+          in: query
+          description: Filter by category
+          schema:
+            type: string
+        - name: tags
+          in: query
+          description: Filter by tags (comma-separated)
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            type: string
+            enum: ["active", "completed", "archived"]
+        - name: search
+          in: query
+          description: Full-text search query
+          schema:
+            type: string
+        - name: from_date
+          in: query
+          description: Filter memos created after this date
+          schema:
+            type: string
+            format: date-time
+        - name: to_date
+          in: query
+          description: Filter memos created before this date
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  memos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Memo'
+                  total:
+                    type: integer
+                    description: Total number of memos matching criteria
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      summary: Create memo
+      description: Create a new memo with automatic encryption
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  description: Memo content
+                  example: "Meeting notes for Q1 planning"
+                category:
+                  type: string
+                  default: "general"
+                  example: "work"
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["meeting", "planning"]
+                priority:
+                  type: integer
+                  minimum: 0
+                  maximum: 3
+                  default: 0
+                  example: 2
+                security_level:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  default: 1
+                  example: 2
+      responses:
+        '201':
+          description: Memo created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Memo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /memos/{memo_id}:
+    get:
+      summary: Get memo
+      description: Retrieve a specific memo by ID
+      parameters:
+        - $ref: '#/components/parameters/MemoId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Memo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update memo
+      description: Update an existing memo
+      parameters:
+        - $ref: '#/components/parameters/MemoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Updated memo content
+                category:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+                priority:
+                  type: integer
+                  minimum: 0
+                  maximum: 3
+                status:
+                  type: string
+                  enum: ["active", "completed", "archived"]
+      responses:
+        '200':
+          description: Memo updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Memo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete memo
+      description: Soft delete a memo (can be restored)
+      parameters:
+        - $ref: '#/components/parameters/MemoId'
+      responses:
+        '204':
+          description: Memo deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /memos/{memo_id}/restore:
+    post:
+      summary: Restore memo
+      description: Restore a previously deleted memo
+      parameters:
+        - $ref: '#/components/parameters/MemoId'
+      responses:
+        '200':
+          description: Memo restored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Memo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /backups:
+    get:
+      summary: List backups
+      description: Retrieve list of available backups
+      parameters:
+        - name: type
+          in: query
+          description: Filter by backup type
+          schema:
+            type: string
+            enum: ["full", "incremental"]
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backups:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Backup'
+                  total:
+                    type: integer
+
+    post:
+      summary: Create backup
+      description: Create a new backup (full or incremental)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: ["full", "incremental"]
+                  default: "incremental"
+                encrypt:
+                  type: boolean
+                  default: true
+                upload_to_cloud:
+                  type: boolean
+                  default: false
+                compression:
+                  type: boolean
+                  default: true
+      responses:
+        '202':
+          description: Backup creation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  backup_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: ["pending", "running"]
+                  estimated_completion:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /backups/{backup_id}/download:
+    get:
+      summary: Download backup
+      description: Download a backup file
+      parameters:
+        - name: backup_id
+          in: path
+          required: true
+          description: Backup identifier
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backup file download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /backups/{backup_id}/restore:
+    post:
+      summary: Restore from backup
+      description: Restore system from a backup
+      parameters:
+        - name: backup_id
+          in: path
+          required: true
+          description: Backup identifier
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Restore operation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restore_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: ["pending", "running"]
+                  estimated_completion:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /plugins:
+    get:
+      summary: List plugins
+      description: Get list of available plugins
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plugins:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PluginInfo'
+                  total:
+                    type: integer
+
+    post:
+      summary: Install plugin
+      description: Install a new plugin
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                plugin_file:
+                  type: string
+                  format: binary
+                  description: Plugin ZIP file
+      responses:
+        '201':
+          description: Plugin installed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginInfo'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /plugins/{plugin_name}:
+    get:
+      summary: Get plugin info
+      description: Get detailed information about a plugin
+      parameters:
+        - name: plugin_name
+          in: path
+          required: true
+          description: Plugin name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PluginInfo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Configure plugin
+      description: Update plugin configuration
+      parameters:
+        - name: plugin_name
+          in: path
+          required: true
+          description: Plugin name
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                config:
+                  type: object
+                  description: Plugin-specific configuration
+      responses:
+        '200':
+          description: Plugin configured successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Uninstall plugin
+      description: Remove a plugin from the system
+      parameters:
+        - name: plugin_name
+          in: path
+          required: true
+          description: Plugin name
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Plugin uninstalled successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /system/status:
+    get:
+      summary: System status
+      description: Get comprehensive system status and metrics
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMetrics'
+
+  /system/health:
+    get:
+      summary: Health check
+      description: Perform system health diagnostics
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: ["healthy", "warning", "critical"]
+                  checks:
+                    type: object
+                    description: Individual health check results
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /analytics/memos:
+    get:
+      summary: Memo analytics
+      description: Get analytics and insights about memo usage
+      parameters:
+        - name: period
+          in: query
+          description: Analysis period
+          schema:
+            type: string
+            enum: ["day", "week", "month", "year"]
+            default: "month"
+        - name: from_date
+          in: query
+          description: Start date for analysis
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          description: End date for analysis
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  period:
+                    type: string
+                  total_memos:
+                    type: integer
+                  memos_by_category:
+                    type: object
+                    description: Memo count by category
+                  memos_by_status:
+                    type: object
+                    description: Memo count by status
+                  top_tags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tag:
+                          type: string
+                        count:
+                          type: integer
+                  creation_trends:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                        count:
+                          type: integer
+                  user_activity:
+                    type: object
+                    description: User activity metrics
+
+  /search:
+    get:
+      summary: Global search
+      description: Perform advanced search across all content
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Content type to search
+          schema:
+            type: string
+            enum: ["memos", "all"]
+            default: "all"
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: fuzzy
+          in: query
+          description: Enable fuzzy search
+          schema:
+            type: boolean
+            default: false
+        - name: regex
+          in: query
+          description: Treat query as regex pattern
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: string
+                  total_results:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum: ["memo", "plugin", "backup"]
+                        id:
+                          type: string
+                        title:
+                          type: string
+                        snippet:
+                          type: string
+                        relevance_score:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                  search_time_ms:
+                    type: number
+
+  /auth/login:
+    post:
+      summary: User login
+      description: Authenticate user and return access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "johndoe"
+                password:
+                  type: string
+                  format: password
+                  example: "securepassword123"
+                remember_me:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: JWT access token
+                  refresh_token:
+                    type: string
+                    description: JWT refresh token
+                  expires_in:
+                    type: integer
+                    description: Token expiration time in seconds
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      summary: User logout
+      description: Invalidate current session
+      responses:
+        '204':
+          description: Logout successful
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      summary: Refresh token
+      description: Get new access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: Valid refresh token
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_in:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+tags:
+  - name: Memos
+    description: Memo management operations
+  - name: Backups
+    description: Backup and recovery operations
+  - name: Plugins
+    description: Plugin management
+  - name: System
+    description: System monitoring and status
+  - name: Analytics
+    description: Usage analytics and insights
+  - name: Search
+    description: Global search functionality
+  - name: Authentication
+    description: User authentication and authorization
+
+externalDocs:
+  description: Find more documentation at GitHub
+  url: https://github.com/memo-system/docs
