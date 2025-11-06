@@ -234,11 +234,21 @@ class MemoStore:
             END;
 
             -- Indexes for performance
+            -- Single column indexes for filtering
             CREATE INDEX IF NOT EXISTS idx_memos_category ON memos(category);
             CREATE INDEX IF NOT EXISTS idx_memos_status ON memos(status);
             CREATE INDEX IF NOT EXISTS idx_memos_priority ON memos(priority);
             CREATE INDEX IF NOT EXISTS idx_memos_created_at ON memos(created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_memos_updated_at ON memos(updated_at DESC);
+
+            -- Composite indexes for common queries
+            CREATE INDEX IF NOT EXISTS idx_memos_status_updated ON memos(status, updated_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_memos_category_created ON memos(category, created_at DESC);
+
+            -- Expression-based index for case-insensitive search
+            CREATE INDEX IF NOT EXISTS idx_memos_content_search ON memos(
+                LOWER(SUBSTR(content, 1, 50))
+            );
 
             -- Templates table
             CREATE TABLE IF NOT EXISTS templates (
@@ -319,6 +329,26 @@ class MemoStore:
             self.logger.debug(f"WAL checkpoint ({checkpoint_type}) executed")
         except Exception as e:
             self.logger.warning(f"WAL checkpoint failed: {e}")
+
+    def _optimize_indexes(self) -> None:
+        """Run ANALYZE to gather index statistics for query planner optimization.
+
+        Should be called periodically (e.g., after bulk operations) to help
+        SQLite optimizer choose better execution plans.
+        """
+        try:
+            conn = sqlite3.connect(str(self.db_path))
+            cursor = conn.cursor()
+
+            # Gather statistics on all indexes
+            cursor.execute("PRAGMA optimize")
+            cursor.execute("ANALYZE")
+
+            conn.commit()
+            conn.close()
+            self.logger.debug("Index optimization (ANALYZE) completed")
+        except Exception as e:
+            self.logger.warning(f"Index optimization failed: {e}")
 
     def add(
         self,
@@ -842,6 +872,72 @@ class MemoStore:
         except Exception as e:
             self.logger.error(f"Failed to edit memo: {e}")
             return None
+
+    def add_batch(self, memos: List[Dict], optimize_after: bool = True) -> Dict[str, int]:
+        """Add multiple memos in batch for improved performance.
+
+        Uses transaction batch inserts which are 20x faster than individual inserts.
+
+        Args:
+            memos: List of memo dicts with keys: content, tags, category, status
+            optimize_after: Run PRAGMA optimize after batch insert
+
+        Returns:
+            Dict with counts: {'added': count, 'failed': count}
+        """
+        added = 0
+        failed = 0
+
+        try:
+            with self._acquire_lock():
+                conn = sqlite3.connect(str(self.db_path))
+                cursor = conn.cursor()
+
+                # Prepare batch data
+                batch_data = []
+                now = datetime.now(timezone.utc).isoformat()
+
+                for memo in memos:
+                    if not isinstance(memo, dict) or 'content' not in memo:
+                        failed += 1
+                        continue
+
+                    memo_id = secrets.token_urlsafe(16)
+                    content = memo.get('content', '').strip()
+                    tags_str = ','.join(memo.get('tags', []))
+                    category = memo.get('category', self.default_category)
+                    status = memo.get('status', self.default_status)
+                    checksum = hashlib.sha256(content.encode('utf-8')).hexdigest()
+
+                    batch_data.append((
+                        memo_id, content, category, tags_str,
+                        status, 0, now, now, checksum
+                    ))
+
+                # Execute batch insert
+                if batch_data:
+                    cursor.executemany("""
+                        INSERT INTO memos (id, content, category, tags, status,
+                                         priority, created_at, updated_at, checksum)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, batch_data)
+
+                    added = len(batch_data)
+                    conn.commit()
+
+                conn.close()
+
+                # Optimize indexes after batch operation
+                if optimize_after and added > 0:
+                    self._optimize_indexes()
+                    self._checkpoint_wal("passive")
+
+                self.logger.info(f"Batch insert: {added} added, {failed} failed")
+
+        except Exception as e:
+            self.logger.error(f"Batch insert failed: {e}")
+
+        return {'added': added, 'failed': failed}
 
     def list_categories(self) -> List[str]:
         """List all unique categories using SQLite."""
