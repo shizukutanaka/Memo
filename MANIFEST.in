@@ -14,7 +14,6 @@ include requirements-dev.txt
 include requirements-production.txt
 
 # Include configuration files
-include setup.py
 include pytest.ini
 include .coveragerc
 include pyproject.toml

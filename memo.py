@@ -763,18 +763,20 @@ class MemoStore:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
 
-            # Delete from both tables
+            # Delete from both tables. Capture rowcount from the main table:
+            # for the FTS5 virtual table, rowcount does not reflect the
+            # deleted row even when the delete succeeds.
             cursor.execute("DELETE FROM memos WHERE id = ?", (memo_id,))
+            deleted = cursor.rowcount > 0
             cursor.execute("DELETE FROM memos_fts WHERE id = ?", (memo_id,))
 
-            deleted = cursor.rowcount > 0
             conn.commit()
             conn.close()
 
-            # Clear cache if available
+            # Clear cache if available (LRUCache's removal API is invalidate())
             if IMPROVEMENTS_AVAILABLE and deleted:
                 cache = get_cache()
-                cache.delete(f"memo:{memo_id}")
+                cache.invalidate(f"memo:{memo_id}")
 
             return deleted
 
@@ -794,6 +796,7 @@ class MemoStore:
         """Edit an existing memo using SQLite."""
         try:
             conn = sqlite3.connect(str(self.db_path))
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
 
             # Prepare update data
@@ -849,12 +852,16 @@ class MemoStore:
                     memo = {
                         'id': row['id'],
                         'content': row['content'],
+                        'text': row['content'],  # Compatibility (same as list_all)
                         'category': row['category'],
                         'tags': row['tags'].split(',') if row['tags'] else [],
                         'status': row['status'],
                         'priority': row['priority'],
                         'created_at': row['created_at'],
+                        'created': row['created_at'],  # Compatibility
                         'updated_at': row['updated_at'],
+                        'edited': row['updated_at'],  # Compatibility
+                        'timestamp': row['created_at'],  # Compatibility
                         'checksum': row['checksum']
                     }
 
@@ -1362,12 +1369,16 @@ class MemoStore:
                 memo = {
                     'id': row['id'],
                     'content': row['content'],
+                    'text': row['content'],  # Compatibility (same as list_all)
                     'category': row['category'],
                     'tags': row['tags'].split(',') if row['tags'] else [],
                     'status': row['status'],
                     'priority': row['priority'],
                     'created_at': row['created_at'],
+                    'created': row['created_at'],  # Compatibility
                     'updated_at': row['updated_at'],
+                    'edited': row['updated_at'],  # Compatibility
+                    'timestamp': row['created_at'],  # Compatibility
                     'checksum': row['checksum']
                 }
 
