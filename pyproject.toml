@@ -73,3 +73,18 @@ Issues = "https://github.com/shizukutanaka/Memo/issues"
 
 [project.scripts]
 memo = "memo:main"
+
+# The application is a flat set of top-level modules. List them explicitly so
+# the `memo` module (and the modules it imports) are actually installed;
+# without this, setuptools auto-discovery does not pick them up.
+# This file is the single source of truth for packaging (there is no setup.py).
+[tool.setuptools]
+py-modules = [
+  "memo",
+  "config",
+  "memo_enhanced_utils",
+  "memo_errors",
+  "memo_integrity",
+  "memo_performance",
+  "memo_security",
+]
