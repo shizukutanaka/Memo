@@ -127,12 +127,19 @@ class TestMemoCore(unittest.TestCase):
         memo_due = MemoCore(text="Due reminder", reminder=past_time.isoformat())
         self.assertTrue(memo_due.is_due())
 
-        # Test with custom before time
+        # Test with custom before time. is_due(before) asks whether the
+        # reminder has come due by the given reference time -- the same
+        # semantics MemoCollection.get_due_reminders relies on.
         almost_due_time = datetime.now(timezone.utc) + timedelta(hours=1)
         memo_almost_due = MemoCore(text="Almost due", reminder=almost_due_time.isoformat())
 
+        # A reference time after the reminder: the memo is due by then
         before_check = datetime.now(timezone.utc) + timedelta(hours=2)
-        self.assertFalse(memo_almost_due.is_due(before_check))
+        self.assertTrue(memo_almost_due.is_due(before_check))
+
+        # A reference time before the reminder: not due yet
+        early_check = datetime.now(timezone.utc) + timedelta(minutes=30)
+        self.assertFalse(memo_almost_due.is_due(early_check))
 
     def test_memo_validation_text(self):
         """Test text validation."""
@@ -167,7 +174,7 @@ class TestMemoCore(unittest.TestCase):
         many_tags = ["tag"] * (MemoValidator.MAX_TAGS + 1)
         valid, error = MemoValidator.validate_tags(many_tags)
         self.assertFalse(valid)
-        self.assertIn("too many", error)
+        self.assertIn("Too many", error)
 
         # Invalid tag characters
         valid, error = MemoValidator.validate_tags(["valid", "invalid tag!"])
@@ -243,7 +250,23 @@ class TestMemoCollection(unittest.TestCase):
             MemoCore(text="Test memo 3", tags=["important"], category="testing", status="active"),
         ]
 
-        self.mock_storage.list_memos.return_value = self.memos
+        # The storage contract is that list_memos applies the given filters
+        # (MemoCollection delegates filtering to storage), so the mock must
+        # honor them instead of returning every memo unconditionally.
+        def _list_memos(limit=50, **filters):
+            result = list(self.memos)
+            if "category" in filters:
+                result = [m for m in result if m.category == filters["category"]]
+            if "status" in filters:
+                result = [m for m in result if m.status == filters["status"]]
+            if "tags" in filters:
+                result = [m for m in result if all(t in m.tags for t in filters["tags"])]
+            if limit:
+                result = result[:limit]
+            return result
+
+        self.mock_storage.list_memos.side_effect = _list_memos
+        self.mock_storage.get_stats.return_value = {"total": len(self.memos)}
         self.mock_storage.get_memo.side_effect = lambda memo_id: next(
             (memo for memo in self.memos if memo.id == memo_id), None
         )
@@ -451,9 +474,10 @@ class TestMemoValidator(unittest.TestCase):
 
     def test_category_validation_edge_cases(self):
         """Test category validation edge cases."""
-        # Empty category
+        # Empty category: rejected, consistent with
+        # memo_security.SecurityValidator ("Category cannot be empty")
         valid, error = MemoValidator.validate_category("")
-        self.assertTrue(valid)  # Empty should be allowed
+        self.assertFalse(valid)
 
         # Category with allowed special characters
         valid, error = MemoValidator.validate_category("category_with-hyphens")
@@ -551,6 +575,7 @@ class TestIntegration(unittest.TestCase):
         ]
 
         storage.list_memos.return_value = sample_memos
+        storage.get_stats.return_value = {"total": len(sample_memos)}
 
         collection = MemoCollection(storage)
 

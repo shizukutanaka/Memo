@@ -432,8 +432,10 @@ class MemoStore:
                     'category': category,
                     'tags': sanitized_tags,
                     'status': status,
+                    'priority': 0,
                     'created_at': now,
                     'created': now,  # Compatibility with format_memo
+                    'updated_at': now,
                     'timestamp': now  # Compatibility with format_memo
                 }
 
@@ -562,7 +564,7 @@ class MemoStore:
                        f.rank as search_rank
                 FROM memos_fts f
                 INNER JOIN memos m ON f.rowid = m.rowid
-                WHERE f MATCH ?
+                WHERE memos_fts MATCH ?
             """
             params = [fts_query]
 
@@ -590,7 +592,8 @@ class MemoStore:
                 sql += " AND (" + " OR ".join(tag_conditions) + ")"
 
             # Order by BM25 rank and recency
-            sql += " ORDER BY f.rank DESC, m.updated_at DESC LIMIT 100"
+            # (FTS5 rank is negative: smaller values are better matches)
+            sql += " ORDER BY f.rank ASC, m.updated_at DESC LIMIT 100"
 
             try:
                 rows = cursor.execute(sql, params).fetchall()
@@ -763,18 +766,25 @@ class MemoStore:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
 
-            # Delete from both tables
+            # Delete from both tables. The result must be read from the
+            # memos DELETE: the AFTER DELETE trigger removes the FTS row
+            # first, so the FTS delete below matches nothing and its
+            # rowcount would falsely report failure (and skip the cache
+            # invalidation below) even though the memo was deleted.
             cursor.execute("DELETE FROM memos WHERE id = ?", (memo_id,))
+            deleted = cursor.rowcount > 0
             cursor.execute("DELETE FROM memos_fts WHERE id = ?", (memo_id,))
 
-            deleted = cursor.rowcount > 0
             conn.commit()
             conn.close()
 
-            # Clear cache if available
+            # Clear cache if available (LRUCache's removal method is
+            # invalidate(); calling a nonexistent delete() here used to
+            # raise AttributeError, which the handler below turned into a
+            # false "delete failed" result)
             if IMPROVEMENTS_AVAILABLE and deleted:
                 cache = get_cache()
-                cache.delete(f"memo:{memo_id}")
+                cache.invalidate(f"memo:{memo_id}")
 
             return deleted
 
@@ -794,6 +804,7 @@ class MemoStore:
         """Edit an existing memo using SQLite."""
         try:
             conn = sqlite3.connect(str(self.db_path))
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
 
             # Prepare update data
@@ -835,17 +846,20 @@ class MemoStore:
             updated = cursor.rowcount > 0
 
             if updated:
-                # Update FTS table
-                cursor.execute("""
-                    UPDATE memos_fts SET content = ?, category = ?, tags = ?
-                    WHERE id = ?
-                """, (new_text, new_category or '', tags_str, memo_id))
-
-                conn.commit()
-
                 # Get updated memo
                 row = cursor.execute("SELECT * FROM memos WHERE id = ?", (memo_id,)).fetchone()
                 if row:
+                    # Sync the FTS table from the stored row, so fields the
+                    # caller did not change keep their current values
+                    # (previously this referenced a tags_str variable that
+                    # only existed when new_tags was given, and forced the
+                    # category to '' whenever new_category was omitted)
+                    cursor.execute("""
+                        UPDATE memos_fts SET content = ?, category = ?, tags = ?
+                        WHERE id = ?
+                    """, (row['content'], row['category'], row['tags'], memo_id))
+
+                    conn.commit()
                     memo = {
                         'id': row['id'],
                         'content': row['content'],

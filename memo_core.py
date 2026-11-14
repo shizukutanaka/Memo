@@ -110,6 +110,11 @@ class MemoValidator:
     @staticmethod
     def validate_tags(tags: List[str]) -> tuple[bool, str]:
         """Validate memo tags."""
+        # None means "no tags", matching the rest of the codebase
+        # (MemoCore and MemoStore both normalize tags with `tags or []`)
+        if tags is None:
+            return True, ""
+
         if len(tags) > MemoValidator.MAX_TAGS:
             return False, f"Too many tags (max {MemoValidator.MAX_TAGS})"
 
@@ -127,7 +132,10 @@ class MemoValidator:
         if len(category) > MemoValidator.MAX_CATEGORY_LENGTH:
             return False, f"Category too long (max {MemoValidator.MAX_CATEGORY_LENGTH} characters)"
 
-        if not category.replace('-', '').replace('_', '').replace(' ', '').isalnum():
+        # Spaces are not stripped before the check: category names must be a
+        # single token, consistent with memo_security.SecurityValidator
+        # (SAFE_CATEGORY_PATTERN), which the application itself uses.
+        if not category.replace('-', '').replace('_', '').isalnum():
             return False, f"Invalid category characters: {category}"
 
         return True, ""
