@@ -24,6 +24,7 @@ import re
 import secrets
 import sqlite3
 import sys
+import threading
 import time
 import uuid
 import string
@@ -563,6 +564,10 @@ class DatabaseManager:
         self.security = security
         self.conn = None
         self.logger = logging.getLogger("memo_system.db")
+        # The connection is shared across threads (check_same_thread=False),
+        # so transactions must be serialized: concurrent execute() calls on
+        # one sqlite3 connection corrupt each other's parameter binding.
+        self._tx_lock = threading.RLock()
         self._init_database()
 
     def _init_database(self):
@@ -750,12 +755,13 @@ class DatabaseManager:
     @contextmanager
     def transaction(self):
         """Database transaction context manager"""
-        try:
-            yield self.conn
-            self.conn.commit()
-        except Exception as e:
-            self.conn.rollback()
-            raise e
+        with self._tx_lock:
+            try:
+                yield self.conn
+                self.conn.commit()
+            except Exception as e:
+                self.conn.rollback()
+                raise e
 
     def close(self):
         """Close database connection"""

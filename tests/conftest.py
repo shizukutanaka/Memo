@@ -57,12 +57,16 @@ def clean_environment(monkeypatch):
 
 @pytest.fixture
 def sample_memo_data():
-    """Provide sample memo data for testing."""
+    """Provide sample memo data for testing.
+
+    Shaped after the real MemoStore.add() inputs: content, category, tags
+    and status. (MemoStore has no priority input; new memos always start
+    with priority 0.)
+    """
     return {
         "content": "Test memo content",
         "category": "test",
         "tags": ["testing", "sample"],
-        "priority": 2,
         "status": "active"
     }
 
@@ -74,19 +78,16 @@ def multiple_memos():
         {
             "content": "First test memo",
             "category": "work",
-            "tags": ["project", "urgent"],
-            "priority": 3
+            "tags": ["project", "urgent"]
         },
         {
             "content": "Second test memo",
             "category": "personal",
-            "tags": ["todo"],
-            "priority": 1
+            "tags": ["todo"]
         },
         {
             "content": "Third test memo about testing",
             "category": "development",
-            "tags": ["testing", "quality"],
-            "priority": 2
+            "tags": ["testing", "quality"]
         }
     ]

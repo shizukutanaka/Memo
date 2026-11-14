@@ -486,7 +486,7 @@ class TestPerformanceMonitor(unittest.TestCase):
         self.assertIn('active_sessions', status)
 
         # If monitoring available, check additional metrics
-        if self.monitor.enabled:
+        if self.monitor.psutil_available:
             self.assertIn('cpu_percent', status)
             self.assertIn('memory_percent', status)
             self.assertIn('disk_usage', status)

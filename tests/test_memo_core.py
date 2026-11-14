@@ -1,192 +1,199 @@
-"""Core functionality tests for the memo system."""
+"""Core functionality tests for the memo system.
+
+These tests run against the real storage API in ``memo.py``
+(:class:`MemoStore`). An earlier version of this file was written against
+a ``MemoSystem`` class that never existed in ``memo.py``; the resulting
+ImportError was swallowed by a module-level ``pytest.skip``, so the suite
+collected zero tests and reported success without verifying anything.
+"""
+
+import json
+import sqlite3
+import sys
+from pathlib import Path
 
 import pytest
-import sqlite3
-from pathlib import Path
-import sys
-import os
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-try:
-    from memo import MemoSystem, MemoValidationError
-except ImportError:
-    pytest.skip("memo module not available", allow_module_level=True)
+from memo import MemoStore, ValidationError, export_memos, generate_stats_report
 
 
-class TestMemoSystem:
-    """Test suite for core MemoSystem functionality."""
+@pytest.fixture
+def store(test_db_path, mock_home):
+    """A MemoStore backed by a temporary database and home directory."""
+    return MemoStore(data_file=test_db_path)
 
-    def test_add_memo_success(self, test_db_path, sample_memo_data):
+
+def add_memo(store, data):
+    """Add a memo described by a fixture dict through the real API."""
+    return store.add(
+        data["content"],
+        tags=data.get("tags"),
+        category=data.get("category"),
+        status=data.get("status"),
+    )
+
+
+class TestMemoStore:
+    """Test suite for core MemoStore functionality."""
+
+    def test_add_memo_success(self, store, sample_memo_data):
         """Test adding a memo successfully."""
-        system = MemoSystem(db_path=test_db_path)
-        memo_id = system.add_memo(**sample_memo_data)
+        memo = add_memo(store, sample_memo_data)
 
-        assert isinstance(memo_id, int)
-        assert memo_id > 0
+        assert isinstance(memo, dict)
+        assert isinstance(memo["id"], str)
+        assert memo["id"]
+        assert memo["content"] == sample_memo_data["content"]
 
-    def test_add_memo_minimal(self, test_db_path):
+    def test_add_memo_minimal(self, store):
         """Test adding a memo with minimal information."""
-        system = MemoSystem(db_path=test_db_path)
-        memo_id = system.add_memo(content="Simple memo")
+        memo = store.add("Simple memo")
 
-        assert isinstance(memo_id, int)
-        assert memo_id > 0
+        assert isinstance(memo, dict)
+        assert memo["id"]
+        assert memo["content"] == "Simple memo"
 
-    def test_add_memo_empty_content_raises_error(self, test_db_path):
-        """Test that empty content raises ValidationError."""
-        system = MemoSystem(db_path=test_db_path)
+    def test_add_memo_empty_content_raises_error(self, store):
+        """Test that empty content raises a validation error."""
+        with pytest.raises(ValidationError):
+            store.add("")
 
-        with pytest.raises((MemoValidationError, ValueError)):
-            system.add_memo(content="")
+        with pytest.raises(ValidationError):
+            store.add("   ")
 
-    def test_list_memos(self, test_db_path, multiple_memos):
+    def test_list_memos(self, store, multiple_memos):
         """Test listing memos."""
-        system = MemoSystem(db_path=test_db_path)
-
-        # Add multiple memos
         for memo_data in multiple_memos:
-            system.add_memo(**memo_data)
+            add_memo(store, memo_data)
 
-        # List all memos
-        memos = system.list_memos(limit=10)
+        memos = store.list_all(limit=10)
 
         assert len(memos) == len(multiple_memos)
         assert all(isinstance(m, dict) for m in memos)
         assert all("content" in m for m in memos)
 
-    def test_search_memos(self, test_db_path, multiple_memos):
+    def test_search_memos(self, store, multiple_memos):
         """Test searching memos by keyword."""
-        system = MemoSystem(db_path=test_db_path)
-
-        # Add test data
         for memo_data in multiple_memos:
-            system.add_memo(**memo_data)
+            add_memo(store, memo_data)
 
-        # Search for specific keyword
-        results = system.search_memos(query="testing")
+        results = store.search("testing")
 
         assert len(results) > 0
         assert any("testing" in m["content"].lower() for m in results)
 
-    def test_get_memo_by_id(self, test_db_path, sample_memo_data):
+    def test_get_memo_by_id(self, store, sample_memo_data):
         """Test retrieving a specific memo by ID."""
-        system = MemoSystem(db_path=test_db_path)
-
-        memo_id = system.add_memo(**sample_memo_data)
-        memo = system.get_memo(memo_id)
+        added = add_memo(store, sample_memo_data)
+        memo = store.get_by_id(added["id"])
 
         assert memo is not None
-        assert memo["id"] == memo_id
+        assert memo["id"] == added["id"]
         assert memo["content"] == sample_memo_data["content"]
 
-    def test_update_memo(self, test_db_path, sample_memo_data):
+    def test_update_memo(self, store, sample_memo_data):
         """Test updating memo content."""
-        system = MemoSystem(db_path=test_db_path)
-
-        memo_id = system.add_memo(**sample_memo_data)
+        added = add_memo(store, sample_memo_data)
         new_content = "Updated content"
 
-        system.update_memo(memo_id, content=new_content)
-        updated_memo = system.get_memo(memo_id)
+        updated = store.edit(added["id"], new_content)
+        assert updated is not None
+        assert updated["content"] == new_content
 
-        assert updated_memo["content"] == new_content
+        fetched = store.get_by_id(added["id"])
+        assert fetched["content"] == new_content
 
-    def test_delete_memo(self, test_db_path, sample_memo_data):
-        """Test deleting a memo (soft delete)."""
-        system = MemoSystem(db_path=test_db_path)
+    def test_delete_memo(self, store, sample_memo_data):
+        """Test deleting a memo.
 
-        memo_id = system.add_memo(**sample_memo_data)
-        system.delete_memo(memo_id)
+        MemoStore.delete() is a hard delete: the memo row is removed, so a
+        subsequent lookup finds nothing. (There is no soft-delete /
+        ``deleted_at`` mechanism in this API.)
+        """
+        added = add_memo(store, sample_memo_data)
 
-        # Verify memo is marked as deleted
-        memo = system.get_memo(memo_id, include_deleted=True)
-        assert memo["deleted_at"] is not None
+        assert store.delete(added["id"]) is True
+        assert store.get_by_id(added["id"]) is None
+        # Deleting the same memo again reports that nothing was deleted
+        assert store.delete(added["id"]) is False
 
-    def test_get_statistics(self, test_db_path, multiple_memos):
+    def test_get_statistics(self, store, multiple_memos):
         """Test retrieving system statistics."""
-        system = MemoSystem(db_path=test_db_path)
-
         for memo_data in multiple_memos:
-            system.add_memo(**memo_data)
+            add_memo(store, memo_data)
 
-        stats = system.get_statistics()
+        stats = generate_stats_report(store, days=30)
 
         assert isinstance(stats, dict)
         assert "total_memos" in stats
         assert stats["total_memos"] == len(multiple_memos)
 
-    def test_category_filtering(self, test_db_path, multiple_memos):
+    def test_category_filtering(self, store, multiple_memos):
         """Test filtering memos by category."""
-        system = MemoSystem(db_path=test_db_path)
-
         for memo_data in multiple_memos:
-            system.add_memo(**memo_data)
+            add_memo(store, memo_data)
 
-        work_memos = system.list_memos(category="work")
+        work_memos = store.list_all(limit=10, category="work")
 
-        assert len(work_memos) > 0
+        assert len(work_memos) == 1
         assert all(m["category"] == "work" for m in work_memos)
 
-    def test_tag_search(self, test_db_path, multiple_memos):
+    def test_tag_search(self, store, multiple_memos):
         """Test searching memos by tag."""
-        system = MemoSystem(db_path=test_db_path)
-
         for memo_data in multiple_memos:
-            system.add_memo(**memo_data)
+            add_memo(store, memo_data)
 
-        urgent_memos = system.search_by_tag("urgent")
+        urgent_memos = store.search_by_tag("urgent")
 
-        assert len(urgent_memos) > 0
+        assert len(urgent_memos) == 1
+        assert "urgent" in urgent_memos[0]["tags"]
 
 
 class TestMemoValidation:
     """Test suite for input validation."""
 
-    def test_validate_content_length(self, test_db_path):
-        """Test content length validation."""
-        system = MemoSystem(db_path=test_db_path)
+    def test_validate_content_length(self, store):
+        """Test that long content within the limit is accepted.
 
-        # Test maximum length (if applicable)
+        The enforced maximum is SecurityValidator.MAX_TEXT_LENGTH
+        (1,000,000 characters); 100,000 characters is well within it.
+        """
         very_long_content = "x" * 100000
-        memo_id = system.add_memo(content=very_long_content)
+        memo = store.add(very_long_content)
 
-        assert memo_id > 0
+        assert memo["id"]
+        assert memo["content"] == very_long_content
 
-    def test_validate_priority_range(self, test_db_path):
-        """Test priority value validation."""
-        system = MemoSystem(db_path=test_db_path)
+    def test_new_memo_priority_is_zero(self, store):
+        """Test the priority of a newly added memo.
 
-        # Valid priorities
-        for priority in [0, 1, 2, 3]:
-            memo_id = system.add_memo(
-                content=f"Priority {priority}",
-                priority=priority
-            )
-            assert memo_id > 0
+        MemoStore.add() has no priority parameter: priorities are only
+        carried through import/migration paths, and new memos always
+        start with priority 0.
+        """
+        memo = store.add("Priority check")
 
-    def test_validate_status_values(self, test_db_path):
-        """Test status value validation."""
-        system = MemoSystem(db_path=test_db_path)
+        assert memo["priority"] == 0
+        assert store.get_by_id(memo["id"])["priority"] == 0
 
+    def test_validate_status_values(self, store):
+        """Test that the valid status values are accepted and stored."""
         valid_statuses = ["active", "completed", "archived"]
 
         for status in valid_statuses:
-            memo_id = system.add_memo(
-                content=f"Status {status}",
-                status=status
-            )
-            assert memo_id > 0
+            memo = store.add(f"Status {status}", status=status)
+            assert memo["id"]
+            assert store.get_by_id(memo["id"])["status"] == status
 
 
 class TestMemoDatabase:
     """Test suite for database operations."""
 
-    def test_database_creation(self, test_db_path):
+    def test_database_creation(self, store, test_db_path):
         """Test that database is created properly."""
-        system = MemoSystem(db_path=test_db_path)
-
         assert test_db_path.exists()
 
         # Verify database schema
@@ -203,24 +210,21 @@ class TestMemoDatabase:
 
         assert result is not None
 
-    def test_database_integrity(self, test_db_path, multiple_memos):
+    def test_database_integrity(self, store, multiple_memos):
         """Test database integrity after multiple operations."""
-        system = MemoSystem(db_path=test_db_path)
-
-        # Add memos
         memo_ids = []
         for memo_data in multiple_memos:
-            memo_id = system.add_memo(**memo_data)
-            memo_ids.append(memo_id)
+            memo = add_memo(store, memo_data)
+            memo_ids.append(memo["id"])
 
         # Update some memos
-        system.update_memo(memo_ids[0], content="Updated content")
+        store.edit(memo_ids[0], "Updated content")
 
         # Delete some memos
-        system.delete_memo(memo_ids[1])
+        store.delete(memo_ids[1])
 
         # Verify database integrity
-        conn = sqlite3.connect(test_db_path)
+        conn = sqlite3.connect(store.db_path)
         cursor = conn.cursor()
         cursor.execute("PRAGMA integrity_check")
         result = cursor.fetchone()
@@ -232,31 +236,28 @@ class TestMemoDatabase:
 class TestMemoExport:
     """Test suite for export functionality."""
 
-    def test_export_json(self, test_db_path, temp_dir, multiple_memos):
+    def test_export_json(self, store, multiple_memos):
         """Test exporting memos to JSON."""
-        system = MemoSystem(db_path=test_db_path)
-
         for memo_data in multiple_memos:
-            system.add_memo(**memo_data)
+            add_memo(store, memo_data)
 
-        export_path = temp_dir / "export.json"
-        system.export_memos(str(export_path), format="json")
+        exported = export_memos(store.list_all(limit=0), "json")
+        parsed = json.loads(exported)
 
-        assert export_path.exists()
-        assert export_path.stat().st_size > 0
+        assert len(parsed) == len(multiple_memos)
+        assert all("content" in m for m in parsed)
 
-    def test_export_csv(self, test_db_path, temp_dir, multiple_memos):
+    def test_export_csv(self, store, multiple_memos):
         """Test exporting memos to CSV."""
-        system = MemoSystem(db_path=test_db_path)
-
         for memo_data in multiple_memos:
-            system.add_memo(**memo_data)
+            add_memo(store, memo_data)
 
-        export_path = temp_dir / "export.csv"
-        system.export_memos(str(export_path), format="csv")
+        exported = export_memos(store.list_all(limit=0), "csv")
+        lines = [line for line in exported.splitlines() if line.strip()]
 
-        assert export_path.exists()
-        assert export_path.stat().st_size > 0
+        # Header row plus one row per memo
+        assert lines[0].startswith("id,timestamp,text,tags,category,status")
+        assert len(lines) == 1 + len(multiple_memos)
 
 
 if __name__ == "__main__":

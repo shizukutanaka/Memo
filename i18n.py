@@ -117,6 +117,11 @@ class I18N:
         # Try direct translation first
         translation = self.translations.get(key, None)
 
+        # Fall back to the base language (English) for keys missing from a
+        # partial locale, so users see a real string instead of the raw key
+        if translation is None and self.language != 'en':
+            translation = self.TRANSLATIONS.get('en', {}).get(key, None)
+
         # Fall back to key if no translation available
         if translation is None:
             translation = key

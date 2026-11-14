@@ -188,7 +188,7 @@ class SearchEngine:
         import re
         tokens = re.findall(r'\b\w+\b', text.lower())
         # Remove stop words (simplified list)
-        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for'}
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'over'}
         return set(token for token in tokens if token not in stop_words and len(token) > 2)
 
     def _update_idf(self):
@@ -199,8 +199,10 @@ class SearchEngine:
             return
 
         for term, doc_ids in self.index.items():
-            # IDF = log(total documents / documents containing term)
-            self.idf[term] = math.log(total_docs / len(doc_ids))
+            # Smoothed IDF = log(1 + total documents / documents containing term)
+            # (the unsmoothed form collapses to 0 for terms present in every
+            # document, which would zero out all relevance scores)
+            self.idf[term] = math.log(1 + total_docs / len(doc_ids))
 
 
 # Analytics engine
