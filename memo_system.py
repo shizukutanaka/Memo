@@ -709,27 +709,23 @@ class DatabaseManager:
             )
         """)
 
-        # Triggers for FTS
-        self.conn.execute("""
-            CREATE TRIGGER IF NOT EXISTS memo_fts_insert AFTER INSERT ON memos
-            BEGIN
-                INSERT INTO memo_fts(rowid, content) VALUES (new.rowid, new.content);
-            END
-        """)
-
-        self.conn.execute("""
-            CREATE TRIGGER IF NOT EXISTS memo_fts_update AFTER UPDATE ON memos
-            BEGIN
-                UPDATE memo_fts SET content = new.content WHERE rowid = new.rowid;
-            END
-        """)
-
-        self.conn.execute("""
-            CREATE TRIGGER IF NOT EXISTS memo_fts_delete AFTER DELETE ON memos
-            BEGIN
-                DELETE FROM memo_fts WHERE rowid = old.rowid;
-            END
-        """)
+        # FTS synchronization is performed by the service layer (see
+        # _fts_index_row/_fts_remove_row), never by triggers. This
+        # connection sets PRAGMA trusted_schema=OFF, and on SQLite
+        # 3.40.0 through 3.43.x any statement whose triggers write to
+        # a virtual table that is not declared SQLITE_VTAB_INNOCUOUS
+        # fails to prepare with 'unsafe use of virtual table
+        # "memo_fts"' (FTS5 only became innocuous in SQLite 3.44.0).
+        # That made every INSERT/UPDATE/DELETE on memos fail on the
+        # SQLite builds bundled with CPython 3.10 on macOS/Windows.
+        # Drop the legacy triggers so existing databases migrate off
+        # trigger-based synchronization as well.
+        for legacy_trigger in (
+            "memo_fts_insert",
+            "memo_fts_update",
+            "memo_fts_delete",
+        ):
+            self.conn.execute(f"DROP TRIGGER IF EXISTS {legacy_trigger}")
 
         self.conn.commit()
 
@@ -751,6 +747,33 @@ class DatabaseManager:
             self.conn.execute(index)
 
         self.conn.commit()
+
+    def _fts_index_row(self, rowid: int, content: str):
+        """Add one memos row to the FTS index.
+
+        Issued as an ordinary top-level statement by the caller,
+        inside the same transaction as the memos write. Doing this
+        from triggers instead is rejected by SQLite 3.40.0-3.43.x
+        under PRAGMA trusted_schema=OFF (see _create_tables).
+        """
+        self.conn.execute(
+            "INSERT INTO memo_fts(rowid, content) VALUES (?, ?)",
+            (rowid, content),
+        )
+
+    def _fts_remove_row(self, rowid: int, content: str):
+        """Remove one memos row from the FTS index.
+
+        Uses the FTS5 'delete' command with the row's previous
+        content, as documented for external content tables: the
+        caller supplies the old content so the correct tokens are
+        removed.
+        """
+        self.conn.execute(
+            "INSERT INTO memo_fts(memo_fts, rowid, content) "
+            "VALUES ('delete', ?, ?)",
+            (rowid, content),
+        )
 
     @contextmanager
     def transaction(self):
@@ -1135,12 +1158,16 @@ class MemoService:
 
         with self.db.transaction():
             # Insert memo
-            self.db.conn.execute("""
+            cursor = self.db.conn.execute("""
                 INSERT INTO memos (id, user_id, content, encrypted_content,
                                  security_level, checksum)
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (memo_id, user_id, stored_content, encrypted_content,
                   security_level, checksum))
+
+            # Keep the FTS index in sync (service-layer sync; see
+            # DatabaseManager._create_tables for why not a trigger)
+            self.db._fts_index_row(cursor.lastrowid, stored_content)
 
             # Handle tags
             if tags:
@@ -1332,6 +1359,12 @@ class MemoService:
         checksum = hashlib.sha256(content.encode()).hexdigest()
 
         with self.db.transaction():
+            # Current stored row, needed to keep the FTS index in sync
+            old_row = self.db.conn.execute(
+                "SELECT rowid, content FROM memos WHERE id = ?",
+                (memo_id,),
+            ).fetchone()
+
             self.db.conn.execute("""
                 UPDATE memos
                 SET content = ?, encrypted_content = ?,
@@ -1339,6 +1372,12 @@ class MemoService:
                     version = version + 1, checksum = ?
                 WHERE id = ? AND user_id = ?
             """, (stored_content, encrypted_content, checksum, memo_id, user_id))
+
+            # Keep the FTS index in sync (service-layer sync; see
+            # DatabaseManager._create_tables for why not a trigger)
+            if old_row is not None:
+                self.db._fts_remove_row(old_row[0], old_row[1])
+                self.db._fts_index_row(old_row[0], stored_content)
 
             # Audit log
             if self.config.enable_audit:
@@ -1665,6 +1704,18 @@ class MaintenanceService:
         cutoff = (datetime.now(timezone.utc) - timedelta(days=self.config.deleted_memo_retention_days))
         cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M:%S")
         with self.db.transaction():
+            # Remove the pruned rows from the FTS index first
+            # (service-layer sync; see _create_tables for why not a
+            # trigger). The 'delete' command needs each row's stored
+            # content, which the SELECT supplies.
+            self.db.conn.execute(
+                """
+                INSERT INTO memo_fts(memo_fts, rowid, content)
+                SELECT 'delete', rowid, content FROM memos
+                WHERE deleted_at IS NOT NULL AND deleted_at <= ?
+                """,
+                (cutoff_str,),
+            )
             cursor = self.db.conn.execute(
                 "DELETE FROM memos WHERE deleted_at IS NOT NULL AND deleted_at <= ?",
                 (cutoff_str,)
