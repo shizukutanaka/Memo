@@ -18,6 +18,7 @@ from i18n import I18N
 from memo_system import (
     AccessLevel,
     DatabaseManager,
+    MaintenanceService,
     MemoService,
     PerformanceMonitor,
     SecurityLevel,
@@ -157,6 +158,99 @@ class TestMemoService(unittest.TestCase):
         # Retrieval should decrypt
         memo = self.service.get_memo(memo_id, self.user_id)
         self.assertEqual(memo.content, content)
+
+
+class TestFTSSyncWithoutTriggers(unittest.TestCase):
+    """Regression tests: FTS synchronization must not rely on triggers.
+
+    DatabaseManager sets PRAGMA trusted_schema=OFF. On SQLite
+    3.40.0-3.43.x -- including the SQLite bundled with CPython 3.10
+    on macOS/Windows -- preparing a statement whose triggers write
+    to a virtual table that is not SQLITE_VTAB_INNOCUOUS fails with
+    'unsafe use of virtual table "memo_fts"' (FTS5 only became
+    innocuous in SQLite 3.44.0), which broke every memo write on
+    those builds. These tests pin the replacement design: no sync
+    triggers exist, and the service-layer synchronization preserves
+    the observable search behavior across the full memo lifecycle
+    (create, update, soft delete, prune).
+    """
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.config = SystemConfig(
+            db_path=Path(self.temp_dir) / "test.db",
+            backup_dir=Path(self.temp_dir) / "backups",
+            log_dir=Path(self.temp_dir) / "logs",
+        )
+        self.security = SecurityManager(self.config)
+        self.db = DatabaseManager(self.config, self.security)
+        self.service = MemoService(self.db, self.security, self.config)
+
+        self.user_id = "test-user"
+        self.db.conn.execute(
+            """
+            INSERT INTO users (id, username, email, password_hash, access_level)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (self.user_id, "testuser", "test@example.com", "hash", AccessLevel.USER),
+        )
+        self.db.conn.commit()
+
+    def tearDown(self):
+        self.db.close()
+        shutil.rmtree(self.temp_dir)
+
+    def test_no_fts_sync_triggers_exist(self):
+        cursor = self.db.conn.execute(
+            """
+            SELECT name FROM sqlite_master
+            WHERE type = 'trigger'
+              AND name IN (
+                  'memo_fts_insert', 'memo_fts_update', 'memo_fts_delete'
+              )
+            """
+        )
+        self.assertEqual(cursor.fetchall(), [])
+
+    def test_fts_sync_full_lifecycle(self):
+        # Create: both memos are searchable
+        first_id = self.service.create_memo(
+            self.user_id, "Python programming guide"
+        )
+        self.service.create_memo(self.user_id, "JavaScript tutorial")
+        self.assertEqual(len(self.service.search_memos(self.user_id, "Python")), 1)
+        self.assertEqual(
+            len(self.service.search_memos(self.user_id, "JavaScript")), 1
+        )
+
+        # Update: new content is searchable, old content no longer matches
+        self.assertTrue(
+            self.service.update_memo(first_id, self.user_id, "Rust systems guide")
+        )
+        self.assertEqual(len(self.service.search_memos(self.user_id, "Rust")), 1)
+        self.assertEqual(len(self.service.search_memos(self.user_id, "Python")), 0)
+
+        # Soft delete: excluded from search results
+        self.assertTrue(self.service.delete_memo(first_id, self.user_id))
+        self.assertEqual(len(self.service.search_memos(self.user_id, "Rust")), 0)
+
+        # Prune: backdate the soft deletion past the retention window;
+        # both the memo row and its FTS entry are removed
+        self.db.conn.execute(
+            "UPDATE memos SET deleted_at = '2000-01-01 00:00:00' WHERE id = ?",
+            (first_id,),
+        )
+        self.db.conn.commit()
+        maintenance = MaintenanceService(self.db, self.config)
+        self.assertEqual(maintenance._prune_deleted_memos(), 1)
+
+        cursor = self.db.conn.execute("SELECT COUNT(*) FROM memos")
+        self.assertEqual(cursor.fetchone()[0], 1)
+        cursor = self.db.conn.execute("SELECT COUNT(*) FROM memo_fts")
+        self.assertEqual(cursor.fetchone()[0], 1)
+        self.assertEqual(
+            len(self.service.search_memos(self.user_id, "JavaScript")), 1
+        )
 
 
 class TestLRUCache(unittest.TestCase):

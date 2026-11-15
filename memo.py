@@ -166,9 +166,11 @@ class MemoStore:
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.logger = self._setup_logger()
 
-        # Run integrity check on startup if improvements available
-        if IMPROVEMENTS_AVAILABLE and IntegrityChecker:
-            self._run_startup_integrity_check()
+        # Run the SQLite integrity check on startup (gated by the
+        # integrity.check_on_startup config inside the method). It only
+        # needs the standard library, so it does not depend on the
+        # optional improvement modules.
+        self._run_startup_integrity_check()
 
         self._check_auto_backup()
 
@@ -1561,21 +1563,51 @@ class MemoStore:
                 self.create_backup()
 
     def _run_startup_integrity_check(self):
-        """Run integrity check on startup if enabled."""
+        """Verify the SQLite database on startup if enabled.
+
+        The store is a SQLite database, so integrity is checked with
+        SQLite's own ``PRAGMA integrity_check`` / ``foreign_key_check``
+        against the database file. The previous implementation called
+        ``IntegrityChecker.check_integrity()`` and ``repair_file()``,
+        which never existed: the checker in memo_integrity.py targets
+        the old JSONL data file (``check_file_integrity()`` reads the
+        file as line-delimited JSON) and cannot validate a SQLite
+        database. Every startup therefore failed with AttributeError
+        and logged an ERROR without checking anything.
+        """
         if not self.config.get("integrity.check_on_startup", True):
             return
 
         try:
-            checker = IntegrityChecker(self.db_path, logger=self.logger)
-            result = checker.check_integrity()
-
-            if not result["valid"]:
-                self.logger.warning(f"Integrity check found {result['errors']} errors")
-                if self.config.get("integrity.auto_repair", False):
-                    self.logger.info("Attempting auto-repair...")
-                    checker.repair_file()
+            conn = sqlite3.connect(str(self.db_path))
+            try:
+                rows = conn.execute("PRAGMA integrity_check(100)").fetchall()
+                fk_rows = conn.execute("PRAGMA foreign_key_check").fetchall()
+            finally:
+                conn.close()
         except Exception as e:
             self.logger.error(f"Integrity check failed: {e}")
+            return
+
+        problems = [row[0] for row in rows if row[0] != "ok"]
+        problems += [
+            f"foreign key violation in {row[0]} (row {row[1]}, references {row[2]})"
+            for row in fk_rows
+        ]
+        if not problems:
+            return
+
+        self.logger.error(
+            f"Database integrity check found {len(problems)} problem(s): "
+            + "; ".join(problems[:5])
+        )
+        if self.config.get("integrity.auto_repair", False):
+            # SQLite has no safe automatic repair for a corrupt database;
+            # say so instead of pretending to fix it.
+            self.logger.error(
+                "Automatic repair is not available for SQLite databases; "
+                f"restore from a backup in {self.backup_dir} if the store is unusable."
+            )
 
     def _get_latest_backup(self) -> Optional[datetime]:
         """Get timestamp of most recent backup."""
