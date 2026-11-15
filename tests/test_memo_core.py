@@ -233,6 +233,78 @@ class TestMemoDatabase:
         assert result[0] == "ok"
 
 
+class TestStartupIntegrityCheck:
+    """The startup integrity check must verify the real (SQLite) store.
+
+    Regression coverage: ``MemoStore._run_startup_integrity_check`` used
+    to call ``IntegrityChecker.check_integrity()`` / ``repair_file()``,
+    which never existed (the memo_integrity checker validates the old
+    JSONL data file), so every startup logged an ERROR and no check
+    ever ran. The check now uses SQLite's own PRAGMA integrity_check.
+    """
+
+    @staticmethod
+    def _capture_errors(store):
+        """Attach a handler collecting ERROR records from the store logger."""
+        import logging
+
+        records = []
+
+        class _Collector(logging.Handler):
+            def emit(self, record):
+                if record.levelno >= logging.ERROR:
+                    records.append(record.getMessage())
+
+        handler = _Collector()
+        store.logger.addHandler(handler)
+        return records, handler
+
+    def test_healthy_database_logs_no_error(self, store):
+        records, handler = self._capture_errors(store)
+        try:
+            store._run_startup_integrity_check()
+        finally:
+            store.logger.removeHandler(handler)
+
+        assert records == []
+
+    def test_corrupt_database_is_reported(self, store, tmp_path):
+        corrupt = tmp_path / "corrupt.db"
+        corrupt.write_bytes(b"this is not a sqlite database" * 64)
+
+        original_path = store.db_path
+        store.db_path = corrupt
+        records, handler = self._capture_errors(store)
+        try:
+            store._run_startup_integrity_check()
+        finally:
+            store.logger.removeHandler(handler)
+            store.db_path = original_path
+
+        assert records, "a corrupt database must be reported at ERROR level"
+        # The report must come from the real check, not from calling a
+        # method that does not exist (the old dead code path).
+        assert all("has no attribute" not in message for message in records)
+
+    def test_check_disabled_by_config(self, store, monkeypatch):
+        real_get = store.config.get
+
+        def fake_get(key, default=None):
+            if key == "integrity.check_on_startup":
+                return False
+            return real_get(key, default)
+
+        monkeypatch.setattr(store.config, "get", fake_get)
+
+        records, handler = self._capture_errors(store)
+        try:
+            store._run_startup_integrity_check()
+        finally:
+            store.logger.removeHandler(handler)
+
+        assert records == []
+
+
 class TestMemoExport:
     """Test suite for export functionality."""
 

@@ -35,9 +35,16 @@ jobs:
         pip install pytest pytest-cov pytest-asyncio
 
     - name: Run tests with coverage
+      # Run the full suite (tests/ plus the root suites) under the
+      # pytest.ini configuration. Coverage scope and the fail-under
+      # floor live in pytest.ini, scoped to memo.py; passing --cov=.
+      # here overrode that scope and failed the gate on
+      # whole-repository coverage (14.55% < 20%) even with every test
+      # passing, and the root suites alone leave memo.py at 15.3%,
+      # also below the floor. This step is a real gate: no
+      # continue-on-error, so a failing suite fails the job.
       run: |
-        pytest test_*.py -v --tb=short --cov=. --cov-report=xml --cov-report=term-missing
-      continue-on-error: true
+        pytest tests/ test_memo_core_suite.py test_memo_system.py test_search_fts.py -v --tb=short --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
