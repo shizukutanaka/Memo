@@ -48,6 +48,20 @@ include `tag`, `edit`, `delete`, `duplicate`, `merge`, `split`,
 `templates`, `backup`, and `link`. Run `python memo.py --help` (or
 `python memo.py <command> --help`) for the full list and options.
 
+## Use as a library
+
+Memo can also be imported from other Python programs. The supported
+import surface is the `memo_api` module, covered by a compatibility
+policy (see `docs/API.md`):
+
+```python
+from memo_api import MemoStore, export_memos
+
+store = MemoStore()
+store.add("Release notes", tags=["work"])
+print(export_memos(store.list_all(), "json"))
+```
+
 ## Optional extras
 
 The `pyproject.toml` declares optional dependency sets for additional
