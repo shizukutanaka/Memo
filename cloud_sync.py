@@ -33,19 +33,20 @@ Usage:
     sync_manager.sync()
 """
 
+import hashlib
 import json
 import logging
-import hashlib
 from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, asdict
+from typing import Any, Dict, List, Optional, Tuple
 
 
 @dataclass
 class SyncMetadata:
     """Metadata for tracking sync state."""
+
     local_version: int = 0
     remote_version: int = 0
     last_sync_time: Optional[str] = None
@@ -180,9 +181,7 @@ class LocalSyncTarget(SyncTarget):
             return {
                 "size": stat.st_size,
                 "mtime": stat.st_mtime,
-                "mtime_iso": datetime.fromtimestamp(
-                    stat.st_mtime, tz=timezone.utc
-                ).isoformat(),
+                "mtime_iso": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
             }
         except Exception as e:
             self.logger.error(f"Get metadata failed for {remote_path}: {e}")
@@ -211,8 +210,7 @@ class WebDAVSyncTarget(SyncTarget):
             self.requests = requests
         except ImportError:
             self.logger.error(
-                "requests library not installed. "
-                "Install with: pip install requests"
+                "requests library not installed. " "Install with: pip install requests"
             )
             self.requests = None
 
@@ -229,9 +227,7 @@ class WebDAVSyncTarget(SyncTarget):
                 timeout=10,
             )
             self.connected = response.status_code in [207, 200]
-            self.logger.info(
-                f"WebDAV connection: {'OK' if self.connected else 'FAILED'}"
-            )
+            self.logger.info(f"WebDAV connection: {'OK' if self.connected else 'FAILED'}")
             return self.connected
         except Exception as e:
             self.logger.error(f"WebDAV connection failed: {e}")
@@ -256,9 +252,7 @@ class WebDAVSyncTarget(SyncTarget):
             if success:
                 self.logger.debug(f"Uploaded {remote_path}")
             else:
-                self.logger.warning(
-                    f"Upload failed for {remote_path}: {response.status_code}"
-                )
+                self.logger.warning(f"Upload failed for {remote_path}: {response.status_code}")
             return success
         except Exception as e:
             self.logger.error(f"Upload failed for {remote_path}: {e}")
@@ -283,9 +277,7 @@ class WebDAVSyncTarget(SyncTarget):
                 self.logger.debug(f"Downloaded {remote_path}")
                 return True
             else:
-                self.logger.warning(
-                    f"Download failed for {remote_path}: {response.status_code}"
-                )
+                self.logger.warning(f"Download failed for {remote_path}: {response.status_code}")
                 return False
         except Exception as e:
             self.logger.error(f"Download failed for {remote_path}: {e}")
@@ -393,9 +385,7 @@ class CloudSyncManager:
             if self.metadata_file.exists():
                 with open(self.metadata_file, "r") as f:
                     data = json.load(f)
-                    return {
-                        k: SyncMetadata(**v) for k, v in data.items()
-                    }
+                    return {k: SyncMetadata(**v) for k, v in data.items()}
         except Exception as e:
             self.logger.warning(f"Failed to load metadata: {e}")
 
@@ -505,12 +495,8 @@ class CloudSyncManager:
                         # Check for conflicts based on timestamp
                         local_memo = self.store.get_by_id(memo_id)
                         if local_memo:
-                            local_time = datetime.fromisoformat(
-                                local_memo.get("updated_at", "")
-                            )
-                            remote_time = datetime.fromisoformat(
-                                remote_memo.get("updated_at", "")
-                            )
+                            local_time = datetime.fromisoformat(local_memo.get("updated_at", ""))
+                            remote_time = datetime.fromisoformat(remote_memo.get("updated_at", ""))
 
                             if remote_time > local_time:
                                 # Remote is newer, skip local update for now

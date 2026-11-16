@@ -14,26 +14,27 @@ Usage:
     python memo_tui.py
 """
 
-from typing import Optional, List, Dict
 from pathlib import Path
+from typing import Dict, List, Optional
 
 try:
+    from rich.console import Console
+    from rich.text import Text
     from textual.app import ComposeResult
-    from textual.containers import Container, Horizontal, Vertical, ScrollableContainer
+    from textual.binding import Binding
+    from textual.containers import Container, Horizontal, ScrollableContainer, Vertical
+    from textual.screen import Screen
     from textual.widgets import (
-        Header,
-        Footer,
-        Static,
         Button,
+        Footer,
+        Header,
         Input,
         Label,
         ListItem,
         ListView,
+        Static,
     )
-    from textual.binding import Binding
-    from textual.screen import Screen
-    from rich.text import Text
-    from rich.console import Console
+
     TEXTUAL_AVAILABLE = True
 except ImportError:
     TEXTUAL_AVAILABLE = False
@@ -162,10 +163,7 @@ class MemoViewerApp:
         for i, memo in enumerate(results, 1):
             content_preview = memo.get("content", "")[:60].replace("\n", " ")
             status = memo.get("status", "?")
-            print(
-                f"{i}. [{status}] {content_preview} "
-                f"({memo.get('id', 'unknown')[:8]})"
-            )
+            print(f"{i}. [{status}] {content_preview} " f"({memo.get('id', 'unknown')[:8]})")
 
         # Allow user to view a specific memo
         if len(results) == 1:
@@ -182,7 +180,7 @@ class MemoViewerApp:
 
     def interactive_menu(self) -> None:
         """Display interactive menu for CLI-based interaction."""
-        from memo import print_success, print_error
+        from memo import print_error, print_success
 
         if not print_success:
             print_success = lambda x: print(f"[OK] {x}")
@@ -225,9 +223,7 @@ class MemoViewerApp:
                 if text:
                     tags = [t.strip() for t in tags_input.split(",") if t.strip()]
                     try:
-                        memo = self.store.add(
-                            text, tags=tags, category=category or None
-                        )
+                        memo = self.store.add(text, tags=tags, category=category or None)
                         print(f"[OK] Memo added: {memo['id'][:8]}")
                     except Exception as e:
                         print(f"[ERROR] Failed to add memo: {e}")
@@ -240,11 +236,7 @@ class MemoViewerApp:
                         print(f"  - {cat}")
                     cat = input("Select category: ").strip()
                     if cat:
-                        results = [
-                            m
-                            for m in self.store.list()
-                            if m.get("category") == cat
-                        ]
+                        results = [m for m in self.store.list() if m.get("category") == cat]
                         print(f"\n[green]Found {len(results)} memos in {cat}:[/green]")
                         for memo in results[:10]:
                             content = memo.get("content", "")[:50]
@@ -272,9 +264,7 @@ def main():
             app = MemoViewerApp()
             app.interactive_menu()
         else:
-            print(
-                "[INFO] Textual not installed - using interactive menu mode"
-            )
+            print("[INFO] Textual not installed - using interactive menu mode")
             app = MemoViewerApp()
             app.interactive_menu()
     else:
