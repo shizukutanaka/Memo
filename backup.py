@@ -305,7 +305,6 @@ class BackupManager:
         """Verify integrity of a backup archive."""
         backup_file = self.backup_dir / f"{backup_name}.zip"
         issues: List[str] = []
-{{ ... }}
 
         if not backup_file.exists():
             return False, ["Backup not found"]

@@ -1,38 +1,51 @@
 #!/usr/bin/env python3
 """Lightweight memo application with enhanced features."""
 
-import json
-import sys
+import argparse
+import csv
+import hashlib
 import io
-import time
-from datetime import datetime, timezone, timedelta
+import json
 import logging
+import os
+import re
+import secrets
+import sqlite3
+import sys
+import tempfile
+import time
+from collections import Counter
+from contextlib import contextmanager, suppress
+from datetime import datetime, timedelta, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-import tempfile
-from typing import Dict, Iterable, List, Optional, Tuple, Any, Generator
-from contextlib import suppress, contextmanager
-import argparse
-import re
-import csv
-from collections import Counter
-import os
-import sqlite3
-import secrets
-import hashlib
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple
+
 from config import Config
 
 # Import improvement modules
 try:
-    from memo_security import SecurityValidator, get_rate_limiter
-    from memo_performance import get_cache, get_index, get_performance_monitor
-    from memo_errors import (
-        ValidationError, SecurityError, StorageError, NotFoundError,
-        print_error, print_success, print_warning,
-        format_validation_error, format_not_found_error, format_storage_error
+    from memo_enhanced_utils import (
+        ConfigValidator,
+        ProgressIndicator,
+        confirm_destructive_operation,
     )
-    from memo_integrity import IntegrityChecker, AutoBackup
-    from memo_enhanced_utils import ProgressIndicator, ConfigValidator, confirm_destructive_operation
+    from memo_errors import (
+        NotFoundError,
+        SecurityError,
+        StorageError,
+        ValidationError,
+        format_not_found_error,
+        format_storage_error,
+        format_validation_error,
+        print_error,
+        print_success,
+        print_warning,
+    )
+    from memo_integrity import AutoBackup, IntegrityChecker
+    from memo_performance import get_cache, get_index, get_performance_monitor
+    from memo_security import SecurityValidator, get_rate_limiter
+
     IMPROVEMENTS_AVAILABLE = True
 except ImportError:
     IMPROVEMENTS_AVAILABLE = False
@@ -277,17 +290,17 @@ class MemoStore:
                     "name": "会議メモ",
                     "content": "# 会議メモ\n\n## 参加者\n- \n\n## アジェンダ\n- \n\n## 決定事項\n- \n\n## アクションアイテム\n- ",
                     "category": "templates",
-                    "tags": "meeting,template"
+                    "tags": "meeting,template",
                 },
                 "todo": {
                     "name": "タスクリスト",
                     "content": "# タスクリスト\n\n## 優先度: 高\n- [ ] \n\n## 優先度: 中\n- [ ] \n\n## 優先度: 低\n- [ ] ",
                     "category": "templates",
-                    "tags": "todo,template"
-                }
+                    "tags": "todo,template",
+                },
             }
 
-            with open(self.templates_file, 'w', encoding='utf-8') as f:
+            with open(self.templates_file, "w", encoding="utf-8") as f:
                 json.dump(default_templates, f, ensure_ascii=False, indent=2)
 
         except Exception as e:
@@ -297,7 +310,12 @@ class MemoStore:
     def _acquire_lock(self, shared: bool = False) -> Generator[None, None, None]:
         """Context manager for acquiring store lock."""
         lock_path = self.db_path.with_suffix(".lock")
-        lock = FileLock(lock_path, timeout=self.lock_timeout, retry_interval=self.lock_retry_interval, logger=self.logger)
+        lock = FileLock(
+            lock_path,
+            timeout=self.lock_timeout,
+            retry_interval=self.lock_retry_interval,
+            logger=self.logger,
+        )
         # shared flag kept for future enhancement; current implementation uses exclusive lock
         lock.acquire()
         try:
@@ -387,9 +405,9 @@ class MemoStore:
         # Prepare data
         category = category or self.default_category
         status = status or self.default_status
-        tags_str = ','.join(sanitized_tags) if sanitized_tags else ''
+        tags_str = ",".join(sanitized_tags) if sanitized_tags else ""
         now = datetime.now(timezone.utc).isoformat()
-        checksum = hashlib.sha256(text.encode('utf-8')).hexdigest()
+        checksum = hashlib.sha256(text.encode("utf-8")).hexdigest()
 
         with self._acquire_lock():
             conn = sqlite3.connect(str(self.db_path))
@@ -397,11 +415,14 @@ class MemoStore:
 
             try:
                 # Insert memo (FTS trigger will auto-populate memos_fts)
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO memos (id, content, category, tags, status, priority,
                                      created_at, updated_at, checksum)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (memo_id, text, category, tags_str, status, 0, now, now, checksum))
+                """,
+                    (memo_id, text, category, tags_str, status, 0, now, now, checksum),
+                )
 
                 conn.commit()
 
@@ -409,15 +430,15 @@ class MemoStore:
                 if IMPROVEMENTS_AVAILABLE:
                     cache = get_cache()
                     memo_data = {
-                        'id': memo_id,
-                        'content': text,
-                        'category': category,
-                        'tags': sanitized_tags,
-                        'status': status,
-                        'priority': 0,
-                        'created_at': now,
-                        'updated_at': now,
-                        'checksum': checksum
+                        "id": memo_id,
+                        "content": text,
+                        "category": category,
+                        "tags": sanitized_tags,
+                        "status": status,
+                        "priority": 0,
+                        "created_at": now,
+                        "updated_at": now,
+                        "checksum": checksum,
                     }
                     cache.put(f"memo:{memo_id}", memo_data)
 
@@ -428,17 +449,17 @@ class MemoStore:
                 self._checkpoint_wal("passive")
 
                 return {
-                    'id': memo_id,
-                    'content': text,
-                    'text': text,  # Compatibility with format_memo
-                    'category': category,
-                    'tags': sanitized_tags,
-                    'status': status,
-                    'priority': 0,
-                    'created_at': now,
-                    'created': now,  # Compatibility with format_memo
-                    'updated_at': now,
-                    'timestamp': now  # Compatibility with format_memo
+                    "id": memo_id,
+                    "content": text,
+                    "text": text,  # Compatibility with format_memo
+                    "category": category,
+                    "tags": sanitized_tags,
+                    "status": status,
+                    "priority": 0,
+                    "created_at": now,
+                    "created": now,  # Compatibility with format_memo
+                    "updated_at": now,
+                    "timestamp": now,  # Compatibility with format_memo
                 }
 
             except Exception as e:
@@ -481,7 +502,7 @@ class MemoStore:
                 params.append(category)
 
             if statuses:
-                placeholders = ','.join('?' * len(statuses))
+                placeholders = ",".join("?" * len(statuses))
                 query += f" AND status IN ({placeholders})"
                 params.extend(statuses)
 
@@ -489,7 +510,7 @@ class MemoStore:
                 tag_conditions = []
                 for tag in tags:
                     tag_conditions.append("tags LIKE ?")
-                    params.append(f'%{tag}%')
+                    params.append(f"%{tag}%")
                 query += " AND (" + " OR ".join(tag_conditions) + ")"
 
             query += " ORDER BY created_at DESC"
@@ -504,19 +525,19 @@ class MemoStore:
             memos = []
             for row in rows:
                 memo = {
-                    'id': row['id'],
-                    'content': row['content'],
-                    'text': row['content'],  # Compatibility
-                    'category': row['category'],
-                    'tags': row['tags'].split(',') if row['tags'] else [],
-                    'status': row['status'],
-                    'priority': row['priority'],
-                    'created_at': row['created_at'],
-                    'created': row['created_at'],  # Compatibility
-                    'updated_at': row['updated_at'],
-                    'edited': row['updated_at'],  # Compatibility
-                    'timestamp': row['created_at'],  # Compatibility
-                    'checksum': row['checksum']
+                    "id": row["id"],
+                    "content": row["content"],
+                    "text": row["content"],  # Compatibility
+                    "category": row["category"],
+                    "tags": row["tags"].split(",") if row["tags"] else [],
+                    "status": row["status"],
+                    "priority": row["priority"],
+                    "created_at": row["created_at"],
+                    "created": row["created_at"],  # Compatibility
+                    "updated_at": row["updated_at"],
+                    "edited": row["updated_at"],  # Compatibility
+                    "timestamp": row["created_at"],  # Compatibility
+                    "checksum": row["checksum"],
                 }
                 memos.append(memo)
 
@@ -581,7 +602,7 @@ class MemoStore:
 
             # Add status filter
             if statuses:
-                placeholders = ','.join('?' * len(statuses))
+                placeholders = ",".join("?" * len(statuses))
                 sql += f" AND m.status IN ({placeholders})"
                 params.extend(statuses)
 
@@ -590,7 +611,7 @@ class MemoStore:
                 tag_conditions = []
                 for tag in tags:
                     tag_conditions.append("m.tags LIKE ?")
-                    params.append(f'%{tag}%')
+                    params.append(f"%{tag}%")
                 sql += " AND (" + " OR ".join(tag_conditions) + ")"
 
             # Order by BM25 rank and recency
@@ -609,19 +630,19 @@ class MemoStore:
             results = []
             for row in rows:
                 memo = {
-                    'id': row['id'],
-                    'content': row['content'],
-                    'text': row['content'],  # Compatibility
-                    'category': row['category'],
-                    'tags': row['tags'].split(',') if row['tags'] else [],
-                    'status': row['status'],
-                    'priority': row['priority'],
-                    'created_at': row['created_at'],
-                    'created': row['created_at'],  # Compatibility
-                    'updated_at': row['updated_at'],
-                    'timestamp': row['created_at'],  # Compatibility
-                    'checksum': row['checksum'],
-                    'search_rank': row['search_rank']
+                    "id": row["id"],
+                    "content": row["content"],
+                    "text": row["content"],  # Compatibility
+                    "category": row["category"],
+                    "tags": row["tags"].split(",") if row["tags"] else [],
+                    "status": row["status"],
+                    "priority": row["priority"],
+                    "created_at": row["created_at"],
+                    "created": row["created_at"],  # Compatibility
+                    "updated_at": row["updated_at"],
+                    "timestamp": row["created_at"],  # Compatibility
+                    "checksum": row["checksum"],
+                    "search_rank": row["search_rank"],
                 }
                 results.append(memo)
 
@@ -631,9 +652,15 @@ class MemoStore:
             self.logger.error(f"Search failed: {e}")
             return []
 
-    def _fallback_search(self, query: str, from_date: Optional[datetime] = None,
-                         to_date: Optional[datetime] = None, statuses: Optional[List[str]] = None,
-                         tags: Optional[List[str]] = None, conn: Optional[sqlite3.Connection] = None) -> List[Dict]:
+    def _fallback_search(
+        self,
+        query: str,
+        from_date: Optional[datetime] = None,
+        to_date: Optional[datetime] = None,
+        statuses: Optional[List[str]] = None,
+        tags: Optional[List[str]] = None,
+        conn: Optional[sqlite3.Connection] = None,
+    ) -> List[Dict]:
         """Fallback search using LIKE when FTS fails."""
         if conn is None:
             conn = sqlite3.connect(str(self.db_path))
@@ -642,7 +669,7 @@ class MemoStore:
         cursor = conn.cursor()
 
         sql = "SELECT * FROM memos WHERE content LIKE ?"
-        params = [f'%{query}%']
+        params = [f"%{query}%"]
 
         if from_date:
             sql += " AND created_at >= ?"
@@ -653,7 +680,7 @@ class MemoStore:
             params.append(to_date.isoformat())
 
         if statuses:
-            placeholders = ','.join('?' * len(statuses))
+            placeholders = ",".join("?" * len(statuses))
             sql += f" AND status IN ({placeholders})"
             params.extend(statuses)
 
@@ -661,7 +688,7 @@ class MemoStore:
             tag_conditions = []
             for tag in tags:
                 tag_conditions.append("tags LIKE ?")
-                params.append(f'%{tag}%')
+                params.append(f"%{tag}%")
             sql += " AND (" + " OR ".join(tag_conditions) + ")"
 
         sql += " ORDER BY updated_at DESC LIMIT 100"
@@ -672,18 +699,18 @@ class MemoStore:
         results = []
         for row in rows:
             memo = {
-                'id': row['id'],
-                'content': row['content'],
-                'text': row['content'],
-                'category': row['category'],
-                'tags': row['tags'].split(',') if row['tags'] else [],
-                'status': row['status'],
-                'priority': row['priority'],
-                'created_at': row['created_at'],
-                'created': row['created_at'],
-                'updated_at': row['updated_at'],
-                'timestamp': row['created_at'],
-                'checksum': row['checksum']
+                "id": row["id"],
+                "content": row["content"],
+                "text": row["content"],
+                "category": row["category"],
+                "tags": row["tags"].split(",") if row["tags"] else [],
+                "status": row["status"],
+                "priority": row["priority"],
+                "created_at": row["created_at"],
+                "created": row["created_at"],
+                "updated_at": row["updated_at"],
+                "timestamp": row["created_at"],
+                "checksum": row["checksum"],
             }
             results.append(memo)
 
@@ -732,7 +759,7 @@ class MemoStore:
 
             # Also check for substring fuzzy match
             for i in range(len(text) - len(query_lower) + 1):
-                substring = text[i:i+len(query_lower)]
+                substring = text[i : i + len(query_lower)]
                 score = SequenceMatcher(None, query_lower, substring).ratio()
                 best_score = max(best_score, score)
 
@@ -810,8 +837,10 @@ class MemoStore:
 
             # Handle tags
             if new_tags is not None:
-                sanitized_tags = self._sanitize_tags(new_tags) if not IMPROVEMENTS_AVAILABLE else new_tags
-                tags_str = ','.join(sanitized_tags) if sanitized_tags else ''
+                sanitized_tags = (
+                    self._sanitize_tags(new_tags) if not IMPROVEMENTS_AVAILABLE else new_tags
+                )
+                tags_str = ",".join(sanitized_tags) if sanitized_tags else ""
                 update_fields.append("tags = ?")
                 params.append(tags_str)
 
@@ -831,12 +860,14 @@ class MemoStore:
             params.append(now)
 
             # Update checksum
-            checksum = hashlib.sha256(new_text.encode('utf-8')).hexdigest()
+            checksum = hashlib.sha256(new_text.encode("utf-8")).hexdigest()
             update_fields.append("checksum = ?")
             params.append(checksum)
 
-            # Execute update
-            sql = f"UPDATE memos SET {', '.join(update_fields)} WHERE id = ?"
+            # Execute update. The interpolated fragments are exclusively
+            # the hardcoded "column = ?" literals appended above; every
+            # value is bound through params, never interpolated.
+            sql = f"UPDATE memos SET {', '.join(update_fields)} WHERE id = ?"  # nosec B608
             params.append(memo_id)
 
             cursor.execute(sql, params)
@@ -851,26 +882,29 @@ class MemoStore:
                     # (previously this referenced a tags_str variable that
                     # only existed when new_tags was given, and forced the
                     # category to '' whenever new_category was omitted)
-                    cursor.execute("""
+                    cursor.execute(
+                        """
                         UPDATE memos_fts SET content = ?, category = ?, tags = ?
                         WHERE id = ?
-                    """, (row['content'], row['category'], row['tags'], memo_id))
+                    """,
+                        (row["content"], row["category"], row["tags"], memo_id),
+                    )
 
                     conn.commit()
                     memo = {
-                        'id': row['id'],
-                        'content': row['content'],
-                        'text': row['content'],  # Compatibility (same as list_all)
-                        'category': row['category'],
-                        'tags': row['tags'].split(',') if row['tags'] else [],
-                        'status': row['status'],
-                        'priority': row['priority'],
-                        'created_at': row['created_at'],
-                        'created': row['created_at'],  # Compatibility
-                        'updated_at': row['updated_at'],
-                        'edited': row['updated_at'],  # Compatibility
-                        'timestamp': row['created_at'],  # Compatibility
-                        'checksum': row['checksum']
+                        "id": row["id"],
+                        "content": row["content"],
+                        "text": row["content"],  # Compatibility (same as list_all)
+                        "category": row["category"],
+                        "tags": row["tags"].split(",") if row["tags"] else [],
+                        "status": row["status"],
+                        "priority": row["priority"],
+                        "created_at": row["created_at"],
+                        "created": row["created_at"],  # Compatibility
+                        "updated_at": row["updated_at"],
+                        "edited": row["updated_at"],  # Compatibility
+                        "timestamp": row["created_at"],  # Compatibility
+                        "checksum": row["checksum"],
                     }
 
                     # Update cache if available
@@ -913,29 +947,31 @@ class MemoStore:
                 now = datetime.now(timezone.utc).isoformat()
 
                 for memo in memos:
-                    if not isinstance(memo, dict) or 'content' not in memo:
+                    if not isinstance(memo, dict) or "content" not in memo:
                         failed += 1
                         continue
 
                     memo_id = secrets.token_urlsafe(16)
-                    content = memo.get('content', '').strip()
-                    tags_str = ','.join(memo.get('tags', []))
-                    category = memo.get('category', self.default_category)
-                    status = memo.get('status', self.default_status)
-                    checksum = hashlib.sha256(content.encode('utf-8')).hexdigest()
+                    content = memo.get("content", "").strip()
+                    tags_str = ",".join(memo.get("tags", []))
+                    category = memo.get("category", self.default_category)
+                    status = memo.get("status", self.default_status)
+                    checksum = hashlib.sha256(content.encode("utf-8")).hexdigest()
 
-                    batch_data.append((
-                        memo_id, content, category, tags_str,
-                        status, 0, now, now, checksum
-                    ))
+                    batch_data.append(
+                        (memo_id, content, category, tags_str, status, 0, now, now, checksum)
+                    )
 
                 # Execute batch insert
                 if batch_data:
-                    cursor.executemany("""
+                    cursor.executemany(
+                        """
                         INSERT INTO memos (id, content, category, tags, status,
                                          priority, created_at, updated_at, checksum)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, batch_data)
+                    """,
+                        batch_data,
+                    )
 
                     added = len(batch_data)
                     conn.commit()
@@ -952,7 +988,7 @@ class MemoStore:
         except Exception as e:
             self.logger.error(f"Batch insert failed: {e}")
 
-        return {'added': added, 'failed': failed}
+        return {"added": added, "failed": failed}
 
     def list_categories(self) -> List[str]:
         """List all unique categories using SQLite."""
@@ -960,7 +996,9 @@ class MemoStore:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
 
-            rows = cursor.execute("SELECT DISTINCT category FROM memos ORDER BY category").fetchall()
+            rows = cursor.execute(
+                "SELECT DISTINCT category FROM memos ORDER BY category"
+            ).fetchall()
             conn.close()
 
             return [row[0] for row in rows]
@@ -977,26 +1015,26 @@ class MemoStore:
                     "name": "Meeting Notes",
                     "template": "# Meeting: {title}\n\n**Date:** {date}\n**Attendees:** {attendees}\n\n## Agenda\n- \n\n## Notes\n\n\n## Action Items\n- [ ] \n\n## Next Steps\n",
                     "category": "meetings",
-                    "tags": ["meeting"]
+                    "tags": ["meeting"],
                 },
                 "task": {
                     "name": "Task",
                     "template": "# Task: {title}\n\n**Priority:** {priority}\n**Due:** {due_date}\n\n## Description\n{description}\n\n## Sub-tasks\n- [ ] \n\n## Notes\n",
                     "category": "tasks",
-                    "tags": ["task", "todo"]
+                    "tags": ["task", "todo"],
                 },
                 "idea": {
                     "name": "Idea",
                     "template": "# Idea: {title}\n\n## Description\n{description}\n\n## Potential Impact\n\n\n## Next Actions\n- [ ] Research further\n- [ ] Create prototype\n",
                     "category": "ideas",
-                    "tags": ["idea", "brainstorm"]
+                    "tags": ["idea", "brainstorm"],
                 },
                 "daily": {
                     "name": "Daily Log",
                     "template": "# Daily Log - {date}\n\n## Accomplishments\n- \n\n## Challenges\n- \n\n## Tomorrow's Focus\n- \n\n## Notes\n",
                     "category": "daily",
-                    "tags": ["daily", "log"]
-                }
+                    "tags": ["daily", "log"],
+                },
             }
             with self.templates_file.open("w", encoding="utf-8") as f:
                 json.dump(default_templates, f, ensure_ascii=False, indent=2)
@@ -1021,14 +1059,21 @@ class MemoStore:
 
         return self.add(text, tags, category)
 
-    def add_template(self, key: str, name: str, template_text: str, category: str = "default", tags: List[str] = None) -> bool:
+    def add_template(
+        self,
+        key: str,
+        name: str,
+        template_text: str,
+        category: str = "default",
+        tags: List[str] = None,
+    ) -> bool:
         """Add a new template."""
         templates = self.get_templates()
         templates[key] = {
             "name": name,
             "template": template_text,
             "category": category,
-            "tags": self._sanitize_tags(tags or [])
+            "tags": self._sanitize_tags(tags or []),
         }
 
         with self.templates_file.open("w", encoding="utf-8") as f:
@@ -1095,7 +1140,9 @@ class MemoStore:
 
         if found:
             if not self._rewrite_all_memos(memos):
-                self.logger.error("Failed to persist link addition between %s and %s", source_id, target_id)
+                self.logger.error(
+                    "Failed to persist link addition between %s and %s", source_id, target_id
+                )
                 return False
 
         return found
@@ -1117,12 +1164,16 @@ class MemoStore:
 
         if found:
             if not self._rewrite_all_memos(memos):
-                self.logger.error("Failed to persist link removal between %s and %s", source_id, target_id)
+                self.logger.error(
+                    "Failed to persist link removal between %s and %s", source_id, target_id
+                )
                 return False
 
         return found
 
-    def get_due_reminders(self, before: Optional[datetime] = None, statuses: Optional[List[str]] = None) -> List[Dict]:
+    def get_due_reminders(
+        self, before: Optional[datetime] = None, statuses: Optional[List[str]] = None
+    ) -> List[Dict]:
         """Get memos with reminders due before specified time and optional statuses."""
         if before is None:
             before = datetime.now(timezone.utc)
@@ -1134,7 +1185,9 @@ class MemoStore:
                 try:
                     reminder_dt = datetime.fromisoformat(reminder)
                 except (TypeError, ValueError):
-                    self.logger.warning("Skipping memo %s with invalid reminder '%s'", memo.get("id"), reminder)
+                    self.logger.warning(
+                        "Skipping memo %s with invalid reminder '%s'", memo.get("id"), reminder
+                    )
                     continue
                 if reminder_dt <= before:
                     if statuses and memo.get("status", "active") not in statuses:
@@ -1145,7 +1198,12 @@ class MemoStore:
         due_memos.sort(key=lambda m: m.get("reminder", ""))
         return due_memos
 
-    def list_reminders(self, from_time: Optional[datetime] = None, to_time: Optional[datetime] = None, statuses: Optional[List[str]] = None) -> List[Dict]:
+    def list_reminders(
+        self,
+        from_time: Optional[datetime] = None,
+        to_time: Optional[datetime] = None,
+        statuses: Optional[List[str]] = None,
+    ) -> List[Dict]:
         """List memos with reminders within a time window."""
         reminders = []
         for memo in self._iter_memos():
@@ -1154,7 +1212,9 @@ class MemoStore:
                 try:
                     reminder_dt = datetime.fromisoformat(reminder)
                 except (TypeError, ValueError):
-                    self.logger.warning("Skipping memo %s with invalid reminder '%s'", memo.get("id"), reminder)
+                    self.logger.warning(
+                        "Skipping memo %s with invalid reminder '%s'", memo.get("id"), reminder
+                    )
                     continue
 
                 if from_time and reminder_dt < from_time:
@@ -1227,7 +1287,10 @@ class MemoStore:
         merged_text = separator.join(memo["text"] for memo in memos_to_merge)
 
         # Use most common category or first one
-        category = max(categories, key=lambda c: sum(1 for m in memos_to_merge if m.get("category", "default") == c))
+        category = max(
+            categories,
+            key=lambda c: sum(1 for m in memos_to_merge if m.get("category", "default") == c),
+        )
 
         # Create merged memo
         merged_memo = self.add(merged_text, list(all_tags), category)
@@ -1260,7 +1323,12 @@ class MemoStore:
 
         return new_memos
 
-    def update_tags_bulk(self, memo_ids: List[str], add_tags: Optional[List[str]] = None, remove_tags: Optional[List[str]] = None) -> Dict[str, int]:
+    def update_tags_bulk(
+        self,
+        memo_ids: List[str],
+        add_tags: Optional[List[str]] = None,
+        remove_tags: Optional[List[str]] = None,
+    ) -> Dict[str, int]:
         """Add or remove tags for multiple memos."""
         add_tags = self._sanitize_tags(add_tags or [])
         remove_tags = self._sanitize_tags(remove_tags or [])
@@ -1375,19 +1443,19 @@ class MemoStore:
 
             if row:
                 memo = {
-                    'id': row['id'],
-                    'content': row['content'],
-                    'text': row['content'],  # Compatibility (same as list_all)
-                    'category': row['category'],
-                    'tags': row['tags'].split(',') if row['tags'] else [],
-                    'status': row['status'],
-                    'priority': row['priority'],
-                    'created_at': row['created_at'],
-                    'created': row['created_at'],  # Compatibility
-                    'updated_at': row['updated_at'],
-                    'edited': row['updated_at'],  # Compatibility
-                    'timestamp': row['created_at'],  # Compatibility
-                    'checksum': row['checksum']
+                    "id": row["id"],
+                    "content": row["content"],
+                    "text": row["content"],  # Compatibility (same as list_all)
+                    "category": row["category"],
+                    "tags": row["tags"].split(",") if row["tags"] else [],
+                    "status": row["status"],
+                    "priority": row["priority"],
+                    "created_at": row["created_at"],
+                    "created": row["created_at"],  # Compatibility
+                    "updated_at": row["updated_at"],
+                    "edited": row["updated_at"],  # Compatibility
+                    "timestamp": row["created_at"],  # Compatibility
+                    "checksum": row["checksum"],
                 }
 
                 # Update cache if available
@@ -1422,7 +1490,9 @@ class MemoStore:
         logger = logging.getLogger(logger_name)
         if not logger.handlers:
             log_path = self.log_dir / "memo.log"
-            handler = RotatingFileHandler(log_path, maxBytes=512 * 1024, backupCount=3, encoding="utf-8")
+            handler = RotatingFileHandler(
+                log_path, maxBytes=512 * 1024, backupCount=3, encoding="utf-8"
+            )
             formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
             handler.setFormatter(formatter)
             logger.addHandler(handler)
@@ -1439,7 +1509,9 @@ class MemoStore:
             with self._acquire_lock(shared=True):
                 conn = sqlite3.connect(str(self.db_path))
                 cursor = conn.cursor()
-                cursor.execute("SELECT id, content, category, tags, status, priority, created_at, updated_at FROM memos ORDER BY updated_at DESC")
+                cursor.execute(
+                    "SELECT id, content, category, tags, status, priority, created_at, updated_at FROM memos ORDER BY updated_at DESC"
+                )
 
                 for row in cursor.fetchall():
                     memo = {
@@ -1454,7 +1526,7 @@ class MemoStore:
                         "created_at": row[6],  # Compatibility
                         "edited": row[7],
                         "updated_at": row[7],  # Compatibility
-                        "timestamp": row[6]  # Compatibility
+                        "timestamp": row[6],  # Compatibility
                     }
                     yield memo
 
@@ -1472,7 +1544,9 @@ class MemoStore:
         try:
             return datetime.fromisoformat(value)
         except (TypeError, ValueError) as exc:
-            self.logger.warning("Memo %s has invalid %s '%s': %s", memo.get("id", "unknown"), field, value, exc)
+            self.logger.warning(
+                "Memo %s has invalid %s '%s': %s", memo.get("id", "unknown"), field, value, exc
+            )
             self._quarantine_line(json.dumps(memo, ensure_ascii=False))
             return None
 
@@ -1493,21 +1567,23 @@ class MemoStore:
                     batch_data = []
                     now = datetime.now(timezone.utc).isoformat()
                     for memo in memos:
-                        batch_data.append((
-                            memo.get("id"),
-                            memo.get("text", ""),
-                            memo.get("category", "default"),
-                            ",".join(memo.get("tags", [])),
-                            memo.get("status", "active"),
-                            memo.get("priority", 0),
-                            memo.get("created", now),
-                            memo.get("edited", now)
-                        ))
+                        batch_data.append(
+                            (
+                                memo.get("id"),
+                                memo.get("text", ""),
+                                memo.get("category", "default"),
+                                ",".join(memo.get("tags", [])),
+                                memo.get("status", "active"),
+                                memo.get("priority", 0),
+                                memo.get("created", now),
+                                memo.get("edited", now),
+                            )
+                        )
 
                     # Batch insert for better performance
                     cursor.executemany(
                         "INSERT INTO memos (id, content, category, tags, status, priority, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                        batch_data
+                        batch_data,
                     )
 
                     conn.commit()
@@ -1598,8 +1674,7 @@ class MemoStore:
             return
 
         self.logger.error(
-            f"Database integrity check found {len(problems)} problem(s): "
-            + "; ".join(problems[:5])
+            f"Database integrity check found {len(problems)} problem(s): " + "; ".join(problems[:5])
         )
         if self.config.get("integrity.auto_repair", False):
             # SQLite has no safe automatic repair for a corrupt database;
@@ -1643,6 +1718,7 @@ class MemoStore:
 
         if self.db_path.exists():
             import shutil
+
             with self._acquire_lock(shared=True):
                 shutil.copy2(self.db_path, backup_path)
             self.logger.info("Created backup: %s", backup_path.name)
@@ -1656,7 +1732,7 @@ class MemoStore:
         """Remove old backups beyond keep_count."""
         backups = sorted(self.backup_dir.glob("backup_*.db"))
         if len(backups) > self.backup_count:
-            for old_backup in backups[:-self.backup_count]:
+            for old_backup in backups[: -self.backup_count]:
                 old_backup.unlink()
                 self.logger.info("Removed old backup: %s", old_backup.name)
 
@@ -1671,6 +1747,7 @@ class MemoStore:
 
         try:
             import shutil
+
             with self._acquire_lock():
                 shutil.copy2(backup_path, self.db_path)
             self.logger.info("Restored from backup: %s", backup_path.name)
@@ -1703,14 +1780,16 @@ class MemoStore:
                     except Exception:
                         memo_count = 0
 
-                    backups.append({
-                        "path": backup_file,
-                        "name": backup_file.name,
-                        "timestamp": ts,
-                        "label": label,
-                        "size": stat.st_size,
-                        "memo_count": memo_count
-                    })
+                    backups.append(
+                        {
+                            "path": backup_file,
+                            "name": backup_file.name,
+                            "timestamp": ts,
+                            "label": label,
+                            "size": stat.st_size,
+                            "memo_count": memo_count,
+                        }
+                    )
                 except (ValueError, IOError):
                     continue
         return backups
@@ -1726,6 +1805,7 @@ def parse_tags_and_links(text: str) -> Tuple[str, List[str], List[str]]:
     clean_text = re.sub(r"\[\[[a-fA-F0-9]{8,}\]\]\s*", "", clean_text).strip()
 
     return clean_text, tags, links
+
 
 def parse_tags(text: str) -> tuple[str, List[str]]:
     """Extract hashtags from text (legacy function)."""
@@ -1750,6 +1830,7 @@ def get_color_code(color_name: str) -> str:
     }
     return colors.get(color_name, "")
 
+
 def _unique_sequence(items: Optional[List[str]]) -> List[str]:
     """Return unique items preserving order."""
     seen = set()
@@ -1759,6 +1840,7 @@ def _unique_sequence(items: Optional[List[str]]) -> List[str]:
             seen.add(item)
             result.append(item)
     return result
+
 
 def generate_stats_report(store: MemoStore, days: int) -> Dict:
     """Generate a comprehensive statistics report."""
@@ -1801,6 +1883,7 @@ def generate_stats_report(store: MemoStore, days: int) -> Dict:
 
     return stats
 
+
 def analyze_trends(store: MemoStore, days: int):
     """Analyze trends in memo creation."""
     memos = store.list_all(limit=0)
@@ -1837,6 +1920,7 @@ def analyze_trends(store: MemoStore, days: int):
                 print(f"Trending down: {((1 - week_last/week1) * 100):.1f}% decrease")
             else:
                 print("Trend stable")
+
 
 def analyze_habits(store: MemoStore, days: int):
     """Analyze user habits and patterns."""
@@ -1881,6 +1965,7 @@ def analyze_habits(store: MemoStore, days: int):
     print(f"\nConsistency score: {consistency:.1f}%")
     print(f"Active days: {len(dates_with_memos)} out of {days}")
 
+
 def analyze_network(store: MemoStore):
     """Analyze memo linking network."""
     memos = store.list_all(limit=0)
@@ -1900,7 +1985,9 @@ def analyze_network(store: MemoStore):
             memos_with_links += 1
 
         # Check if orphan (no links in or out)
-        has_backlinks = any(memo["id"] in m.get("links", []) for m in memos if m["id"] != memo["id"])
+        has_backlinks = any(
+            memo["id"] in m.get("links", []) for m in memos if m["id"] != memo["id"]
+        )
         if not links and not has_backlinks:
             orphan_memos += 1
 
@@ -1921,7 +2008,10 @@ def analyze_network(store: MemoStore):
     if connection_counts:
         most_connected = max(connection_counts, key=connection_counts.get)
         if connection_counts[most_connected] > 0:
-            print(f"\nMost connected memo: {most_connected[:8]} ({connection_counts[most_connected]} connections)")
+            print(
+                f"\nMost connected memo: {most_connected[:8]} ({connection_counts[most_connected]} connections)"
+            )
+
 
 def analyze_productivity(store: MemoStore, days: int):
     """Analyze productivity patterns."""
@@ -1962,7 +2052,10 @@ def analyze_productivity(store: MemoStore, days: int):
         print(f"  Completed: {statuses.get('completed', 0)}")
         print(f"  Archived: {statuses.get('archived', 0)}")
 
-def format_memo(memo: Dict, verbose: bool = False, config: Optional[Config] = None, use_color: bool = True) -> str:
+
+def format_memo(
+    memo: Dict, verbose: bool = False, config: Optional[Config] = None, use_color: bool = True
+) -> str:
     """Format memo for display with optional colors."""
     cfg = config or Config()
     date_format = cfg.get("display.date_format", "%Y-%m-%d %H:%M")
@@ -1998,8 +2091,8 @@ def format_memo(memo: Dict, verbose: bool = False, config: Optional[Config] = No
     else:
         edited_str = ""
 
-    category = memo.get('category', 'default')
-    if category != 'default':
+    category = memo.get("category", "default")
+    if category != "default":
         category_str = f" {c_cat}[{category}]{c_reset}"
     else:
         category_str = ""
@@ -2030,7 +2123,7 @@ def format_memo(memo: Dict, verbose: bool = False, config: Optional[Config] = No
         header = f"{c_id}[{memo['id'][:8]}]{c_reset} {c_date}{local_dt.strftime(date_format)}{c_reset}{edited_str}{category_str}{links_str}{status_str}{tags_str}"
         return f"{header}\n{c_text}{memo['text']}{c_reset}"
     else:
-        preview_source = memo['text'].replace("\n", " ")
+        preview_source = memo["text"].replace("\n", " ")
         if max_preview > 0 and len(preview_source) > max_preview:
             preview_text = preview_source[: max_preview - 1].rstrip() + "…"
         else:
@@ -2048,7 +2141,7 @@ def export_memos(memos: List[Dict], format_type: str) -> str:
         writer = csv.DictWriter(
             output,
             fieldnames=["id", "timestamp", "text", "tags", "category", "status", "edited"],
-            extrasaction="ignore"
+            extrasaction="ignore",
         )
         writer.writeheader()
         for memo in memos:
@@ -2063,7 +2156,11 @@ def export_memos(memos: List[Dict], format_type: str) -> str:
             dt = datetime.fromisoformat(memo["timestamp"])
             local_dt = dt.astimezone()
             tags_str = " ".join(f"#{tag}" for tag in memo.get("tags", []))
-            edited_str = f" *(edited {datetime.fromisoformat(memo['edited']).strftime('%Y-%m-%d')})*" if "edited" in memo else ""
+            edited_str = (
+                f" *(edited {datetime.fromisoformat(memo['edited']).strftime('%Y-%m-%d')})*"
+                if "edited" in memo
+                else ""
+            )
 
             lines.append(f"\n## {local_dt.strftime('%Y-%m-%d %H:%M')}{edited_str}\n")
             if memo.get("category", "default") != "default":
@@ -2105,16 +2202,16 @@ def export_memos(memos: List[Dict], format_type: str) -> str:
             html_parts.append(f'<div class="memo-header">')
             html_parts.append(f'{local_dt.strftime("%Y-%m-%d %H:%M")}')
             if "edited" in memo:
-                html_parts.append(f'<span>{edited_str}</span>')
+                html_parts.append(f"<span>{edited_str}</span>")
             if memo.get("category", "default") != "default":
                 html_parts.append(f'<span class="tag category">{memo["category"]}</span>')
             if memo.get("status", "active") != "active":
                 html_parts.append(f'<span class="tag status">{memo["status"]}</span>')
             for tag in memo.get("tags", []):
                 html_parts.append(f'<span class="tag">#{tag}</span>')
-            html_parts.append('</div>')
+            html_parts.append("</div>")
             html_parts.append(f'<div class="memo-text">{memo["text"]}</div>')
-            html_parts.append('</div>')
+            html_parts.append("</div>")
 
         html_parts.append("</body>\n</html>")
         return "\n".join(html_parts)
@@ -2138,7 +2235,14 @@ def export_memos(memos: List[Dict], format_type: str) -> str:
     return ""
 
 
-def import_memos(store: MemoStore, file_path: str, format_type: str, default_category: Optional[str] = None, default_status: Optional[str] = None, extra_tags: Optional[List[str]] = None) -> int:
+def import_memos(
+    store: MemoStore,
+    file_path: str,
+    format_type: str,
+    default_category: Optional[str] = None,
+    default_status: Optional[str] = None,
+    extra_tags: Optional[List[str]] = None,
+) -> int:
     """Import memos from file."""
     count = 0
     extra_tags = extra_tags or []
@@ -2191,10 +2295,7 @@ def show_statistics(store: MemoStore, days: int, use_color: bool = True):
         return
 
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
-    recent_memos = [
-        m for m in memos
-        if datetime.fromisoformat(m["timestamp"]) >= cutoff_date
-    ]
+    recent_memos = [m for m in memos if datetime.fromisoformat(m["timestamp"]) >= cutoff_date]
 
     print(f"\n{c_header}{c_bold}Memo Statistics (last {days} days){c_reset}")
     print("=" * 50)
@@ -2239,8 +2340,12 @@ def show_statistics(store: MemoStore, days: int, use_color: bool = True):
                 print(f"  #{tag:15s} {bar} {c_num}{count}{c_reset}")
 
         print(f"\n{c_label}Content Statistics:{c_reset}")
-        print(f"  Average words per memo: {c_num}{sum(word_counts) / len(word_counts):.1f}{c_reset}")
-        print(f"  Average chars per memo: {c_num}{sum(char_counts) / len(char_counts):.1f}{c_reset}")
+        print(
+            f"  Average words per memo: {c_num}{sum(word_counts) / len(word_counts):.1f}{c_reset}"
+        )
+        print(
+            f"  Average chars per memo: {c_num}{sum(char_counts) / len(char_counts):.1f}{c_reset}"
+        )
         print(f"  Total words: {c_num}{sum(word_counts):,}{c_reset}")
         print(f"  Total characters: {c_num}{sum(char_counts):,}{c_reset}")
         print(f"  Longest memo: {c_num}{max(word_counts)}{c_reset} words")
@@ -2276,24 +2381,28 @@ def main():
     parser = argparse.ArgumentParser(
         description="Lightweight memo application for efficient note-taking",
         epilog="Examples:\n  memo.py add 'Meeting notes'\n  memo.py list -n 10\n  memo.py search 'keyword'",
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     subparsers = parser.add_subparsers(dest="command", required=True, help="Available commands")
 
     add_parser = subparsers.add_parser(
         "add",
         help="Add a new memo",
-        description="Create a new memo with optional category assignment"
+        description="Create a new memo with optional category assignment",
     )
     add_parser.add_argument("text", nargs="*", help="Memo text (supports markdown)")
-    add_parser.add_argument("-c", "--category", default="default", help="Assign memo to category (default: %(default)s)")
+    add_parser.add_argument(
+        "-c", "--category", default="default", help="Assign memo to category (default: %(default)s)"
+    )
 
     list_parser = subparsers.add_parser(
         "list",
         help="List recent memos",
-        description="Display memos with optional filtering by date, category, status, or tags"
+        description="Display memos with optional filtering by date, category, status, or tags",
     )
-    list_parser.add_argument("-n", "--limit", type=int, default=None, help="Number of memos to show (default 20)")
+    list_parser.add_argument(
+        "-n", "--limit", type=int, default=None, help="Number of memos to show (default 20)"
+    )
     list_parser.add_argument("-v", "--verbose", action="store_true", help="Show full memo content")
     list_parser.add_argument("--from", dest="from_date", help="From date (YYYY-MM-DD)")
     list_parser.add_argument("--to", dest="to_date", help="To date (YYYY-MM-DD)")
@@ -2315,14 +2424,24 @@ def main():
 
     search_parser = subparsers.add_parser("search", help="Search memos")
     search_parser.add_argument("query", nargs="?", help="Search text or regex pattern")
-    search_parser.add_argument("-v", "--verbose", action="store_true", help="Show full memo content")
+    search_parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Show full memo content"
+    )
     search_parser.add_argument("-r", "--regex", action="store_true", help="Use regex search")
-    search_parser.add_argument("-w", "--whole-word", action="store_true", help="Match whole words only")
-    search_parser.add_argument("-i", "--case-sensitive", action="store_true", help="Case sensitive search")
-    search_parser.add_argument("-f", "--fuzzy", action="store_true", help="Fuzzy search (approximate matching)")
+    search_parser.add_argument(
+        "-w", "--whole-word", action="store_true", help="Match whole words only"
+    )
+    search_parser.add_argument(
+        "-i", "--case-sensitive", action="store_true", help="Case sensitive search"
+    )
+    search_parser.add_argument(
+        "-f", "--fuzzy", action="store_true", help="Fuzzy search (approximate matching)"
+    )
     search_parser.add_argument("--from", dest="from_date", help="From date (YYYY-MM-DD)")
     search_parser.add_argument("--to", dest="to_date", help="To date (YYYY-MM-DD)")
-    search_parser.add_argument("-n", "--limit", type=int, default=None, help="Limit number of results")
+    search_parser.add_argument(
+        "-n", "--limit", type=int, default=None, help="Limit number of results"
+    )
     search_parser.add_argument(
         "-s",
         "--status",
@@ -2358,16 +2477,24 @@ def main():
 
     merge_parser = subparsers.add_parser("merge", help="Merge multiple memos")
     merge_parser.add_argument("ids", nargs="+", help="Memo IDs to merge")
-    merge_parser.add_argument("-s", "--separator", default="\n\n---\n\n", help="Separator between merged memos")
-    merge_parser.add_argument("-d", "--delete-originals", action="store_true", help="Delete original memos after merge")
+    merge_parser.add_argument(
+        "-s", "--separator", default="\n\n---\n\n", help="Separator between merged memos"
+    )
+    merge_parser.add_argument(
+        "-d", "--delete-originals", action="store_true", help="Delete original memos after merge"
+    )
 
     split_parser = subparsers.add_parser("split", help="Split a memo into multiple memos")
     split_parser.add_argument("id", help="Memo ID to split")
     split_parser.add_argument("-d", "--delimiter", default="\n\n", help="Delimiter for splitting")
-    split_parser.add_argument("--delete-original", action="store_true", help="Delete original memo after split")
+    split_parser.add_argument(
+        "--delete-original", action="store_true", help="Delete original memo after split"
+    )
 
     export_parser = subparsers.add_parser("export", help="Export memos")
-    export_parser.add_argument("format", choices=["json", "csv", "md", "markdown", "html", "txt"], help="Export format")
+    export_parser.add_argument(
+        "format", choices=["json", "csv", "md", "markdown", "html", "txt"], help="Export format"
+    )
     export_parser.add_argument("-o", "--output", help="Output file (stdout if not provided)")
     export_parser.add_argument("--from", dest="from_date", help="From date (YYYY-MM-DD)")
     export_parser.add_argument("--to", dest="to_date", help="To date (YYYY-MM-DD)")
@@ -2388,7 +2515,9 @@ def main():
 
     import_parser = subparsers.add_parser("import", help="Import memos")
     import_parser.add_argument("file", help="File to import")
-    import_parser.add_argument("-f", "--format", choices=["json", "csv"], default="json", help="Import format")
+    import_parser.add_argument(
+        "-f", "--format", choices=["json", "csv"], default="json", help="Import format"
+    )
     import_parser.add_argument("--category", help="Default category applied on import")
     import_parser.add_argument(
         "--status",
@@ -2409,7 +2538,9 @@ def main():
     stats_parser.add_argument("--export", help="Export stats to file")
 
     analyze_parser = subparsers.add_parser("analyze", help="Advanced analytics")
-    analyze_parser.add_argument("type", choices=["trends", "habits", "network", "productivity"], help="Analysis type")
+    analyze_parser.add_argument(
+        "type", choices=["trends", "habits", "network", "productivity"], help="Analysis type"
+    )
     analyze_parser.add_argument("--days", type=int, default=30, help="Days to analyze")
 
     categories_parser = subparsers.add_parser("categories", help="List all categories")
@@ -2451,11 +2582,17 @@ def main():
     )
     bulk_status_parser.add_argument("--from", dest="from_date", help="From date (YYYY-MM-DD)")
     bulk_status_parser.add_argument("--to", dest="to_date", help="To date (YYYY-MM-DD)")
-    bulk_status_parser.add_argument("--dry-run", action="store_true", help="Show affected memos without updating")
+    bulk_status_parser.add_argument(
+        "--dry-run", action="store_true", help="Show affected memos without updating"
+    )
 
     bulk_tags_parser = bulk_subparsers.add_parser("tags", help="Bulk add or remove tags")
-    bulk_tags_parser.add_argument("--add", action="append", dest="add_tags", help="Tag to add (can be repeated)")
-    bulk_tags_parser.add_argument("--remove", action="append", dest="remove_tags", help="Tag to remove (can be repeated)")
+    bulk_tags_parser.add_argument(
+        "--add", action="append", dest="add_tags", help="Tag to add (can be repeated)"
+    )
+    bulk_tags_parser.add_argument(
+        "--remove", action="append", dest="remove_tags", help="Tag to remove (can be repeated)"
+    )
     bulk_tags_parser.add_argument("--category", help="Filter by category")
     bulk_tags_parser.add_argument(
         "-t",
@@ -2474,7 +2611,9 @@ def main():
     )
     bulk_tags_parser.add_argument("--from", dest="from_date", help="From date (YYYY-MM-DD)")
     bulk_tags_parser.add_argument("--to", dest="to_date", help="To date (YYYY-MM-DD)")
-    bulk_tags_parser.add_argument("--dry-run", action="store_true", help="Show affected memos without updating")
+    bulk_tags_parser.add_argument(
+        "--dry-run", action="store_true", help="Show affected memos without updating"
+    )
 
     filter_parser = subparsers.add_parser("filter", help="Manage saved filter presets")
     filter_subparsers = filter_parser.add_subparsers(dest="filter_action", required=True)
@@ -2500,35 +2639,53 @@ def main():
         action="append",
         help="Filter by tag (can be used multiple times)",
     )
-    filter_save_parser.add_argument("--overwrite", action="store_true", help="Overwrite existing preset")
+    filter_save_parser.add_argument(
+        "--overwrite", action="store_true", help="Overwrite existing preset"
+    )
 
     filter_apply_parser = filter_subparsers.add_parser("apply", help="Apply a saved preset")
     filter_apply_parser.add_argument("name", help="Preset name")
     filter_apply_parser.add_argument("-n", "--limit", type=int, help="Override preset limit")
-    filter_apply_parser.add_argument("-v", "--verbose", action="store_true", help="Show full memo content")
+    filter_apply_parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Show full memo content"
+    )
 
     filter_delete_parser = filter_subparsers.add_parser("delete", help="Delete a preset")
     filter_delete_parser.add_argument("name", help="Preset name")
 
     filter_list_parser = filter_subparsers.add_parser("list", help="List saved presets")
 
-    filter_export_parser = filter_subparsers.add_parser("export", help="Export filter presets to JSON file")
+    filter_export_parser = filter_subparsers.add_parser(
+        "export", help="Export filter presets to JSON file"
+    )
     filter_export_parser.add_argument("file", help="Destination file path")
-    filter_export_parser.add_argument("--names", nargs="*", help="Specific preset names to export (default: all)")
+    filter_export_parser.add_argument(
+        "--names", nargs="*", help="Specific preset names to export (default: all)"
+    )
 
-    filter_import_parser = filter_subparsers.add_parser("import", help="Import filter presets from JSON file")
+    filter_import_parser = filter_subparsers.add_parser(
+        "import", help="Import filter presets from JSON file"
+    )
     filter_import_parser.add_argument("file", help="Source file path")
-    filter_import_parser.add_argument("--overwrite", action="store_true", help="Overwrite presets with the same name")
+    filter_import_parser.add_argument(
+        "--overwrite", action="store_true", help="Overwrite presets with the same name"
+    )
 
     filter_rename_parser = filter_subparsers.add_parser("rename", help="Rename an existing preset")
     filter_rename_parser.add_argument("old_name", help="Current preset name")
     filter_rename_parser.add_argument("new_name", help="New preset name")
-    filter_rename_parser.add_argument("--overwrite", action="store_true", help="Allow replacing an existing preset")
+    filter_rename_parser.add_argument(
+        "--overwrite", action="store_true", help="Allow replacing an existing preset"
+    )
 
-    filter_duplicate_parser = filter_subparsers.add_parser("duplicate", help="Duplicate a preset under a new name")
+    filter_duplicate_parser = filter_subparsers.add_parser(
+        "duplicate", help="Duplicate a preset under a new name"
+    )
     filter_duplicate_parser.add_argument("source", help="Source preset name")
     filter_duplicate_parser.add_argument("target", help="New preset name")
-    filter_duplicate_parser.add_argument("--overwrite", action="store_true", help="Allow replacing an existing preset")
+    filter_duplicate_parser.add_argument(
+        "--overwrite", action="store_true", help="Allow replacing an existing preset"
+    )
 
     templates_parser = subparsers.add_parser("templates", help="Manage memo templates")
     templates_subparsers = templates_parser.add_subparsers(dest="template_action", required=True)
@@ -2537,7 +2694,9 @@ def main():
 
     new_template_parser = templates_subparsers.add_parser("new", help="Create memo from template")
     new_template_parser.add_argument("template", help="Template name")
-    new_template_parser.add_argument("-v", "--var", action="append", nargs=2, metavar=("KEY", "VALUE"), help="Template variable")
+    new_template_parser.add_argument(
+        "-v", "--var", action="append", nargs=2, metavar=("KEY", "VALUE"), help="Template variable"
+    )
 
     add_template_parser = templates_subparsers.add_parser("add", help="Add new template")
     add_template_parser.add_argument("key", help="Template key")
@@ -2586,7 +2745,10 @@ def main():
         except ValueError as exc:
             if exc.args and exc.args[0] == "ambiguous" and len(exc.args) > 1:
                 matches = ", ".join(memo_id[:8] for memo_id in exc.args[1])
-                print(f"{label} memo ID '{partial_id}' is ambiguous: matches {matches}", file=sys.stderr)
+                print(
+                    f"{label} memo ID '{partial_id}' is ambiguous: matches {matches}",
+                    file=sys.stderr,
+                )
             else:
                 print(f"Failed to resolve {label} memo ID '{partial_id}': {exc}", file=sys.stderr)
             return None
@@ -2625,8 +2787,18 @@ def main():
             from_str = from_str or preset_data.get("from_date")
             to_str = to_str or preset_data.get("to_date")
 
-        from_date = datetime.strptime(from_str, "%Y-%m-%d").replace(tzinfo=timezone.utc) if from_str else None
-        to_date = datetime.strptime(to_str + " 23:59:59", "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc) if to_str else None
+        from_date = (
+            datetime.strptime(from_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            if from_str
+            else None
+        )
+        to_date = (
+            datetime.strptime(to_str + " 23:59:59", "%Y-%m-%d %H:%M:%S").replace(
+                tzinfo=timezone.utc
+            )
+            if to_str
+            else None
+        )
 
         category = args.category if getattr(args, "category", None) else None
         statuses = args.status if getattr(args, "status", None) else None
@@ -2637,7 +2809,15 @@ def main():
             statuses = statuses or preset_data.get("statuses")
             tags = tags or preset_data.get("tags")
 
-        effective_limit = args.limit if args.limit is not None else (preset_data.get("limit") if preset_data and preset_data.get("limit") is not None else 20)
+        effective_limit = (
+            args.limit
+            if args.limit is not None
+            else (
+                preset_data.get("limit")
+                if preset_data and preset_data.get("limit") is not None
+                else 20
+            )
+        )
 
         if preset_data and preset_data.get("query"):
             memos = store.search(
@@ -2651,7 +2831,14 @@ def main():
             if effective_limit and effective_limit > 0:
                 memos = memos[:effective_limit]
         else:
-            memos = store.list_all(effective_limit if effective_limit is not None else 20, from_date, to_date, category, statuses, tags)
+            memos = store.list_all(
+                effective_limit if effective_limit is not None else 20,
+                from_date,
+                to_date,
+                category,
+                statuses,
+                tags,
+            )
         if not memos:
             print("No memos found")
         else:
@@ -2673,9 +2860,16 @@ def main():
                 print(f"Preset '{args.preset}' not found", file=sys.stderr)
                 return 1
 
-        query = args.query if args.query is not None else (preset_data.get("query") if preset_data else None)
+        query = (
+            args.query
+            if args.query is not None
+            else (preset_data.get("query") if preset_data else None)
+        )
         if not query:
-            print("Search query is required (provide --preset with query or specify one)", file=sys.stderr)
+            print(
+                "Search query is required (provide --preset with query or specify one)",
+                file=sys.stderr,
+            )
             return 1
 
         regex_flag = args.regex or (preset_data.get("regex") if preset_data else False)
@@ -2690,8 +2884,18 @@ def main():
             from_str = from_str or preset_data.get("from_date")
             to_str = to_str or preset_data.get("to_date")
 
-        from_date = datetime.strptime(from_str, "%Y-%m-%d").replace(tzinfo=timezone.utc) if from_str else None
-        to_date = datetime.strptime(to_str + " 23:59:59", "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc) if to_str else None
+        from_date = (
+            datetime.strptime(from_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            if from_str
+            else None
+        )
+        to_date = (
+            datetime.strptime(to_str + " 23:59:59", "%Y-%m-%d %H:%M:%S").replace(
+                tzinfo=timezone.utc
+            )
+            if to_str
+            else None
+        )
 
         statuses = args.status if getattr(args, "status", None) else None
         tags = args.tag if getattr(args, "tag", None) else None
@@ -2700,9 +2904,19 @@ def main():
             statuses = statuses or preset_data.get("statuses")
             tags = tags or preset_data.get("tags")
 
-        limit = args.limit if args.limit is not None else (preset_data.get("limit") if preset_data and preset_data.get("limit") is not None else None)
+        limit = (
+            args.limit
+            if args.limit is not None
+            else (
+                preset_data.get("limit")
+                if preset_data and preset_data.get("limit") is not None
+                else None
+            )
+        )
 
-        memos = store.search(query, regex_flag, from_date, to_date, statuses, tags, case_sensitive, whole_word, fuzzy)
+        memos = store.search(
+            query, regex_flag, from_date, to_date, statuses, tags, case_sensitive, whole_word, fuzzy
+        )
         if limit and limit > 0:
             memos = memos[:limit]
         if not memos:
@@ -2788,8 +3002,18 @@ def main():
             return 1
 
     elif args.command == "export":
-        from_date = datetime.strptime(args.from_date, "%Y-%m-%d").replace(tzinfo=timezone.utc) if args.from_date else None
-        to_date = datetime.strptime(args.to_date + " 23:59:59", "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc) if args.to_date else None
+        from_date = (
+            datetime.strptime(args.from_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            if args.from_date
+            else None
+        )
+        to_date = (
+            datetime.strptime(args.to_date + " 23:59:59", "%Y-%m-%d %H:%M:%S").replace(
+                tzinfo=timezone.utc
+            )
+            if args.to_date
+            else None
+        )
         statuses = args.status if hasattr(args, "status") and args.status else None
         tags = args.tag if hasattr(args, "tag") and args.tag else None
 
@@ -2866,6 +3090,7 @@ def main():
     elif args.command == "interactive":
         # Launch interactive mode
         from memo_interactive import main as interactive_main
+
         return interactive_main()
 
     elif args.command == "templates":
@@ -2876,7 +3101,7 @@ def main():
                 for key, template in templates.items():
                     print(f"  {key}: {template['name']}")
                     print(f"    Category: {template.get('category', 'default')}")
-                    if template.get('tags'):
+                    if template.get("tags"):
                         print(f"    Tags: {', '.join(template['tags'])}")
                     print()
             else:
@@ -2903,7 +3128,8 @@ def main():
             # Prompt for missing variables
             template_text = templates[args.template]["template"]
             import re
-            required_vars = set(re.findall(r'{(\w+)}', template_text))
+
+            required_vars = set(re.findall(r"{(\w+)}", template_text))
             for var in required_vars:
                 if var not in variables:
                     value = input(f"Enter value for '{var}': ")
@@ -2931,7 +3157,9 @@ def main():
                 print("Empty template", file=sys.stderr)
                 return 1
 
-            success = store.add_template(args.key, args.name, template_text, args.category, args.tags or [])
+            success = store.add_template(
+                args.key, args.name, template_text, args.category, args.tags or []
+            )
             if success:
                 print(f"Template '{args.key}' added")
             else:
@@ -2950,7 +3178,9 @@ def main():
         if not full_id:
             return 1
 
-        new_memo = store.duplicate_memo(full_id, args.text if hasattr(args, "text") and args.text else None)
+        new_memo = store.duplicate_memo(
+            full_id, args.text if hasattr(args, "text") and args.text else None
+        )
         if new_memo:
             print(f"Duplicated: {format_memo(new_memo, config=config)}")
         else:
@@ -3009,7 +3239,7 @@ def main():
                 print("Available Backups:")
                 for i, backup in enumerate(backups, 1):
                     size_kb = backup["size"] / 1024
-                    label_str = f" ({backup['label']})" if backup['label'] else ""
+                    label_str = f" ({backup['label']})" if backup["label"] else ""
                     print(f"  {i}. {backup['name']}{label_str}")
                     print(f"     Created: {backup['timestamp'].strftime('%Y-%m-%d %H:%M')}")
                     print(f"     Size: {size_kb:.1f} KB, Memos: {backup['memo_count']}")
@@ -3146,5 +3376,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

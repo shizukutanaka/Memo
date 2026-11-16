@@ -134,7 +134,10 @@ class IntegrityChecker:
             return None
 
         try:
-            hasher = hashlib.md5()
+            # MD5 is kept for compatibility with checksums already stored
+            # for existing data files; it is a file-integrity checksum, not
+            # a security control, hence usedforsecurity=False.
+            hasher = hashlib.md5(usedforsecurity=False)
             with self.data_file.open("rb") as f:
                 for chunk in iter(lambda: f.read(4096), b""):
                     hasher.update(chunk)

@@ -74,6 +74,17 @@ Issues = "https://github.com/shizukutanaka/Memo/issues"
 [project.scripts]
 memo = "memo:main"
 
+# Code style gates (used by the CI quality jobs). Black and isort must
+# agree on the same line length and import style; without the isort
+# "black" profile the two checks demand contradictory import layouts
+# and can never pass together.
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
 # The application is a flat set of top-level modules. List them explicitly so
 # the `memo` module (and the modules it imports) are actually installed;
 # without this, setuptools auto-discovery does not pick them up.

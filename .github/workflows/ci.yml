@@ -12,7 +12,11 @@ on:
 jobs:
   test:
     name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    # Python 3.9 is in the supported range (pyproject requires-python
+    # >=3.9) but is no longer published for the Ubuntu 26.04 image behind
+    # ubuntu-latest, so the 3.9 leg runs on ubuntu-22.04 instead. The
+    # windows/macos 3.9 legs are unaffected and stay on *-latest.
+    runs-on: ${{ matrix.python-version == '3.9' && matrix.os == 'ubuntu-latest' && 'ubuntu-22.04' || matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -71,24 +75,30 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 black isort mypy
 
+    # These steps are real gates (no continue-on-error): each one passes
+    # on the current tree. Black/isort scope and line length match
+    # [tool.black] / [tool.isort] in pyproject.toml.
     - name: Lint with flake8
       run: |
         # Stop build on syntax errors and undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # Exit-zero treats all errors as warnings
         flake8 . --count --exit-zero --max-line-length=120 --statistics
-      continue-on-error: true
 
     - name: Check code format with Black
       run: black --check memo.py memo_tui.py cloud_sync.py --line-length=100
-      continue-on-error: true
 
     - name: Check import sorting with isort
       run: isort --check-only memo.py memo_tui.py cloud_sync.py
-      continue-on-error: true
 
+    # mypy stays advisory for now: the previous invocation passed
+    # --exit-zero, which is not a mypy flag, so the step died with a
+    # usage error (exit 2) and never type-checked anything. With a valid
+    # invocation it reports 55 pre-existing errors in memo.py and the
+    # modules it imports; paying that type debt down is separate work,
+    # tracked by the annotations this step produces.
     - name: Type check with mypy
-      run: mypy memo.py --ignore-missing-imports --exit-zero
+      run: mypy memo.py --ignore-missing-imports
       continue-on-error: true
 
   security:
@@ -105,15 +115,23 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install bandit safety
+        pip install bandit pip-audit
 
+    # Bandit is a real gate over the modules that actually ship (the
+    # py-modules list in pyproject.toml). The previous whole-tree scan
+    # reported 100+ findings in unshipped legacy modules and could only
+    # ever run with --exit-zero, i.e. it measured nothing; the shipped
+    # set is clean at -ll and is enforced here.
     - name: Security check with Bandit
-      run: bandit -r . -ll --exit-zero
-      continue-on-error: true
+      run: bandit memo.py memo_api.py config.py memo_enhanced_utils.py memo_errors.py memo_integrity.py memo_performance.py memo_security.py -ll
 
-    - name: Check dependencies with Safety
-      run: safety check --json
-      continue-on-error: true
+    # Safety 3.x requires an account/API key and its `check` command
+    # errors out (exit 64), so that gate also measured nothing.
+    # pip-audit audits the declared requirements directly and is a real
+    # gate: it fails if a pinned/floored dependency has a known
+    # vulnerability.
+    - name: Audit dependencies with pip-audit
+      run: pip-audit -r requirements.txt -r requirements-dev.txt
 
   build:
     name: Build Package
