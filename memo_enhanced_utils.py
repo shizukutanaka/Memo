@@ -16,7 +16,7 @@ class ProgressIndicator:
         self.show_percent = show_percent
         self.current = 0
         self.start_time = time.time()
-        self.last_update = 0
+        self.last_update: float = 0
 
     def update(self, n: int = 1) -> None:
         """Update progress by n items."""

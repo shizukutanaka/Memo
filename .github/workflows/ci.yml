@@ -111,10 +111,14 @@ jobs:
 
     # mypy stays advisory for now: the previous invocation passed
     # --exit-zero, which is not a mypy flag, so the step died with a
-    # usage error (exit 2) and never type-checked anything. With a valid
-    # invocation it reports 55 pre-existing errors in memo.py and the
-    # modules it imports; paying that type debt down is separate work,
-    # tracked by the annotations this step produces.
+    # usage error (exit 2) and never type-checked anything. The type
+    # debt has since been paid down from 55 errors to exactly one:
+    # "MemoStore" has no attribute "corrupted_file" (memo.py,
+    # _quarantine_line). That attribute has never been assigned, so
+    # the quarantine path currently raises AttributeError at runtime;
+    # initializing it would change that behavior (and invent a file
+    # location), so it is left as a separate decision. Remove
+    # continue-on-error once that error is resolved.
     - name: Type check with mypy
       run: mypy memo.py --ignore-missing-imports
       continue-on-error: true

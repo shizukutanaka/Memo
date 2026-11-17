@@ -200,7 +200,7 @@ class IntegrityChecker:
             except Exception as e:
                 return False, f"Failed to create backup: {e}"
 
-        repaired = []
+        repaired: List[str] = []
         failed = []
 
         # Attempt to fix each issue
