@@ -37,13 +37,10 @@ test-cov:
 lint:
 	flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 	flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
-	# Same invocation as CI: scoped to memo.py and advisory. The type
-	# debt is down to a single remaining error (the never-assigned
-	# MemoStore.corrupted_file attribute; see ci.yml for why fixing
-	# it is a separate decision), so this stays advisory until that
-	# is resolved. The old whole-tree `mypy .` could never pass and
-	# matched no CI gate.
-	mypy memo.py --ignore-missing-imports || true
+	# Same invocation as CI: scoped to memo.py and a hard gate (the
+	# type debt is paid off; the error count must stay at zero). The
+	# old whole-tree `mypy .` could never pass and matched no CI gate.
+	mypy memo.py --ignore-missing-imports
 
 format:
 	black .

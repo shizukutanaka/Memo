@@ -161,6 +161,7 @@ class MemoStore:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.templates_file = self.data_dir / "templates.json"
+        self.corrupted_file = self.data_dir / "corrupted.jsonl"
         self.backup_dir = self.data_dir / "backups"
         self.config = Config()
         self.default_category = self.config.get("behavior.default_category", "default")

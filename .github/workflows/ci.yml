@@ -109,19 +109,15 @@ jobs:
     - name: Check import sorting with isort
       run: isort --check-only memo.py memo_tui.py cloud_sync.py
 
-    # mypy stays advisory for now: the previous invocation passed
-    # --exit-zero, which is not a mypy flag, so the step died with a
-    # usage error (exit 2) and never type-checked anything. The type
-    # debt has since been paid down from 55 errors to exactly one:
-    # "MemoStore" has no attribute "corrupted_file" (memo.py,
-    # _quarantine_line). That attribute has never been assigned, so
-    # the quarantine path currently raises AttributeError at runtime;
-    # initializing it would change that behavior (and invent a file
-    # location), so it is left as a separate decision. Remove
-    # continue-on-error once that error is resolved.
+    # mypy is a hard gate: the invocation must stay valid (the old
+    # --exit-zero flag was not a mypy flag, so the step died with a
+    # usage error and never type-checked anything) and the error
+    # count must stay at zero. The last error was a real bug, not a
+    # typing nit: MemoStore.corrupted_file was never assigned, so the
+    # quarantine path raised AttributeError at runtime; it is now
+    # initialized in __init__ and covered by a regression test.
     - name: Type check with mypy
       run: mypy memo.py --ignore-missing-imports
-      continue-on-error: true
 
   security:
     name: Security Checks
