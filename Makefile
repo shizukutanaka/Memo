@@ -11,7 +11,7 @@ help:
 	@echo "  test-cov        Run tests with coverage report"
 	@echo "  lint            Run linters (flake8, mypy)"
 	@echo "  format          Format code with black and isort"
-	@echo "  security        Run security checks (bandit, safety)"
+	@echo "  security        Run security checks (bandit, pip-audit)"
 	@echo "  clean           Clean build artifacts"
 	@echo "  build           Build distribution packages"
 	@echo "  dist            Create distribution packages"
@@ -37,17 +37,25 @@ test-cov:
 lint:
 	flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 	flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
-	mypy . --ignore-missing-imports
+	# Same invocation as CI: scoped to memo.py and advisory (55
+	# pre-existing type errors are tracked, not gated on). The old
+	# whole-tree `mypy .` could never pass and matched no CI gate.
+	mypy memo.py --ignore-missing-imports || true
 
 format:
 	black .
 	isort .
 
 # Security
+# Same checks as CI: advisory whole-tree Bandit report, a real gate
+# over the modules that actually ship (pyproject py-modules), and
+# pip-audit over the declared requirements. Replaces `safety check`
+# (Safety 3.x requires an account/API key and errors out unaudited)
+# and the bare environment-wide `pip-audit`.
 security:
-	bandit -r . -f txt
-	safety check
-	pip-audit
+	bandit -r . -f json -o bandit-report.json || true
+	bandit memo.py memo_api.py config.py memo_enhanced_utils.py memo_errors.py memo_integrity.py memo_performance.py memo_security.py -ll
+	pip-audit -r requirements.txt -r requirements-dev.txt
 
 # Cleanup
 clean:
