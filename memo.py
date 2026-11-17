@@ -49,20 +49,20 @@ try:
     IMPROVEMENTS_AVAILABLE = True
 except ImportError:
     IMPROVEMENTS_AVAILABLE = False
-    SecurityValidator = None
-    get_rate_limiter = None
-    IntegrityChecker = None
-    AutoBackup = None
+    SecurityValidator = None  # type: ignore[assignment, misc]
+    get_rate_limiter = None  # type: ignore[assignment]
+    IntegrityChecker = None  # type: ignore[assignment, misc]
+    AutoBackup = None  # type: ignore[assignment, misc]
 
 try:  # pragma: no cover - platform specific
     import fcntl  # type: ignore
 except ImportError:  # pragma: no cover - Windows
-    fcntl = None
+    fcntl = None  # type: ignore[assignment]
 
 try:  # pragma: no cover - Windows specific
     import msvcrt  # type: ignore
 except ImportError:  # pragma: no cover - POSIX
-    msvcrt = None
+    msvcrt = None  # type: ignore[assignment]
 
 
 VALID_STATUSES = {"active", "completed", "archived"}
@@ -118,6 +118,7 @@ class FileLock:
             self._handle = None
 
     def _try_lock(self) -> None:
+        assert self._handle is not None
         if fcntl is not None:
             fcntl.flock(self._handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         elif msvcrt is not None:
@@ -132,6 +133,7 @@ class FileLock:
             raise OSError("No locking primitives available on this platform")
 
     def _unlock(self) -> None:
+        assert self._handle is not None
         if fcntl is not None:
             fcntl.flock(self._handle.fileno(), fcntl.LOCK_UN)
         elif msvcrt is not None:
@@ -159,6 +161,7 @@ class MemoStore:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.templates_file = self.data_dir / "templates.json"
+        self.corrupted_file = self.data_dir / "corrupted.jsonl"
         self.backup_dir = self.data_dir / "backups"
         self.config = Config()
         self.default_category = self.config.get("behavior.default_category", "default")
@@ -279,33 +282,6 @@ class MemoStore:
         conn.commit()
         conn.close()
 
-    def _init_templates(self) -> None:
-        """Initialize default templates if not exists."""
-        try:
-            if self.templates_file.exists() and self.templates_file.stat().st_size > 0:
-                return
-
-            default_templates = {
-                "meeting": {
-                    "name": "会議メモ",
-                    "content": "# 会議メモ\n\n## 参加者\n- \n\n## アジェンダ\n- \n\n## 決定事項\n- \n\n## アクションアイテム\n- ",
-                    "category": "templates",
-                    "tags": "meeting,template",
-                },
-                "todo": {
-                    "name": "タスクリスト",
-                    "content": "# タスクリスト\n\n## 優先度: 高\n- [ ] \n\n## 優先度: 中\n- [ ] \n\n## 優先度: 低\n- [ ] ",
-                    "category": "templates",
-                    "tags": "todo,template",
-                },
-            }
-
-            with open(self.templates_file, "w", encoding="utf-8") as f:
-                json.dump(default_templates, f, ensure_ascii=False, indent=2)
-
-        except Exception as e:
-            self.logger.warning(f"Failed to initialize templates: {e}")
-
     @contextmanager
     def _acquire_lock(self, shared: bool = False) -> Generator[None, None, None]:
         """Context manager for acquiring store lock."""
@@ -373,14 +349,14 @@ class MemoStore:
     def add(
         self,
         text: str,
-        tags: List[str] = None,
-        category: str = None,
-        linked_memos: List[str] = None,
+        tags: Optional[List[str]] = None,
+        category: Optional[str] = None,
+        linked_memos: Optional[List[str]] = None,
         status: Optional[str] = None,
     ) -> Dict:
         """Add a new memo with SQLite storage."""
         # Validate and sanitize inputs if improvements available
-        if IMPROVEMENTS_AVAILABLE and SecurityValidator:
+        if IMPROVEMENTS_AVAILABLE and SecurityValidator is not None:
             # Validate text
             valid, error = SecurityValidator.validate_text(text)
             if not valid:
@@ -442,7 +418,7 @@ class MemoStore:
                     }
                     cache.put(f"memo:{memo_id}", memo_data)
 
-                if print_success:
+                if print_success is not None:
                     print_success(f"メモを追加しました (ID: {memo_id})")
 
                 # Perform WAL checkpoint after add to manage file growth
@@ -464,7 +440,7 @@ class MemoStore:
 
             except Exception as e:
                 conn.rollback()
-                if print_error:
+                if print_error is not None:
                     print_error(f"メモの追加に失敗しました: {e}")
                 raise
             finally:
@@ -475,7 +451,7 @@ class MemoStore:
         limit: int = 50,
         from_date: Optional[datetime] = None,
         to_date: Optional[datetime] = None,
-        category: str = None,
+        category: Optional[str] = None,
         statuses: Optional[List[str]] = None,
         tags: Optional[List[str]] = None,
     ) -> List[Dict]:
@@ -487,7 +463,7 @@ class MemoStore:
 
             # Build query
             query = "SELECT * FROM memos WHERE 1=1"
-            params = []
+            params: List[Any] = []
 
             if from_date:
                 query += " AND created_at >= ?"
@@ -820,9 +796,9 @@ class MemoStore:
         self,
         memo_id: str,
         new_text: str,
-        new_tags: List[str] = None,
-        new_category: str = None,
-        new_links: List[str] = None,
+        new_tags: Optional[List[str]] = None,
+        new_category: Optional[str] = None,
+        new_links: Optional[List[str]] = None,
         new_status: Optional[str] = None,
     ) -> Optional[Dict]:
         """Edit an existing memo using SQLite."""
@@ -1065,7 +1041,7 @@ class MemoStore:
         name: str,
         template_text: str,
         category: str = "default",
-        tags: List[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> bool:
         """Add a new template."""
         templates = self.get_templates()
@@ -1848,7 +1824,7 @@ def generate_stats_report(store: MemoStore, days: int) -> Dict:
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
     recent_memos = [m for m in memos if datetime.fromisoformat(m["timestamp"]) >= cutoff_date]
 
-    stats = {
+    stats: Dict[str, Any] = {
         "generated": datetime.now().isoformat(),
         "period_days": days,
         "total_memos": len(memos),
@@ -1893,7 +1869,7 @@ def analyze_trends(store: MemoStore, days: int):
     print("=" * 50)
 
     # Daily trend
-    daily_counts = {}
+    daily_counts: Dict[str, int] = {}
     for memo in memos:
         dt = datetime.fromisoformat(memo["timestamp"])
         if dt >= cutoff_date:
@@ -1902,8 +1878,8 @@ def analyze_trends(store: MemoStore, days: int):
 
     if daily_counts:
         avg_daily = sum(daily_counts.values()) / len(daily_counts)
-        max_day = max(daily_counts, key=daily_counts.get)
-        min_day = min(daily_counts, key=daily_counts.get)
+        max_day = max(daily_counts, key=lambda day: daily_counts[day])
+        min_day = min(daily_counts, key=lambda day: daily_counts[day])
 
         print(f"Average memos per day: {avg_daily:.1f}")
         print(f"Most active day: {max_day} ({daily_counts[max_day]} memos)")
@@ -2006,7 +1982,7 @@ def analyze_network(store: MemoStore):
         connection_counts[memo["id"]] = outgoing + incoming
 
     if connection_counts:
-        most_connected = max(connection_counts, key=connection_counts.get)
+        most_connected = max(connection_counts, key=lambda memo_id: connection_counts[memo_id])
         if connection_counts[most_connected] > 0:
             print(
                 f"\nMost connected memo: {most_connected[:8]} ({connection_counts[most_connected]} connections)"
@@ -2027,7 +2003,7 @@ def analyze_productivity(store: MemoStore, days: int):
         return
 
     # Words per day
-    words_by_date = {}
+    words_by_date: Dict[str, int] = {}
     for memo in recent_memos:
         dt = datetime.fromisoformat(memo["timestamp"])
         date_key = dt.date().isoformat()
@@ -2037,7 +2013,7 @@ def analyze_productivity(store: MemoStore, days: int):
     if words_by_date:
         total_words = sum(words_by_date.values())
         avg_words_per_day = total_words / len(words_by_date)
-        max_words_day = max(words_by_date, key=words_by_date.get)
+        max_words_day = max(words_by_date, key=lambda day: words_by_date[day])
 
         print(f"Total words written: {total_words:,}")
         print(f"Average words per active day: {avg_words_per_day:.0f}")
@@ -2277,8 +2253,8 @@ def import_memos(
 def show_statistics(store: MemoStore, days: int, use_color: bool = True):
     """Show usage statistics with enhanced visualization."""
     memos = store.list_all(limit=0)
-    categories = Counter()
-    statuses = Counter()
+    categories: Counter[str] = Counter()
+    statuses: Counter[str] = Counter()
 
     use_color = use_color and os.isatty(sys.stdout.fileno())
     if use_color:
@@ -2317,8 +2293,8 @@ def show_statistics(store: MemoStore, days: int, use_color: bool = True):
     if recent_memos:
         all_tags = []
         word_counts = []
-        hours = Counter()
-        days_of_week = Counter()
+        hours: Counter[int] = Counter()
+        days_of_week: Counter[str] = Counter()
         char_counts = []
 
         for memo in recent_memos:

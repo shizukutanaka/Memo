@@ -332,5 +332,21 @@ class TestMemoExport:
         assert len(lines) == 1 + len(multiple_memos)
 
 
+class TestQuarantine:
+    """Invalid lines are quarantined for manual inspection.
+
+    Regression: ``MemoStore.corrupted_file`` was never assigned, so
+    ``_quarantine_line`` raised AttributeError (not the OSError it
+    catches) and crashed the caller instead of recording the line.
+    """
+
+    def test_quarantine_line_is_recorded(self, store):
+        store._quarantine_line('{"broken": ')
+        store._quarantine_line('{"also broken": ')
+
+        content = store.corrupted_file.read_text(encoding="utf-8")
+        assert content.splitlines() == ['{"broken": ', '{"also broken": ']
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -9,7 +9,7 @@ import tempfile
 from contextlib import suppress
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 
 logger = logging.getLogger(__name__)
@@ -110,7 +110,7 @@ class Config:
 
     def _load_env_overrides(self) -> None:
         """Load configuration overrides from environment variables."""
-        env_mappings = {
+        env_mappings: Dict[str, Union[str, Tuple[str, Callable[[str], Any]]]] = {
             "MEMO_DB_PATH": "storage.db_path",
             "MEMO_BACKUP_DIR": "storage.backup_dir",
             "MEMO_LOG_DIR": "logging.log_dir",

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Improved error handling and user experience for memo system."""
 
-from typing import Optional
+from typing import Any, Optional, Union
 import sys
 
 
@@ -57,7 +57,7 @@ class RateLimitError(MemoError):
     pass
 
 
-def format_validation_error(field: str, value: any, reason: str) -> ValidationError:
+def format_validation_error(field: str, value: Any, reason: str) -> ValidationError:
     """Create formatted validation error."""
     return ValidationError(
         f"Invalid {field}",
@@ -93,7 +93,7 @@ def format_security_error(check: str, reason: str) -> SecurityError:
     )
 
 
-def print_error(error: Exception, verbose: bool = False) -> None:
+def print_error(error: Union[Exception, str], verbose: bool = False) -> None:
     """Print error in user-friendly format."""
     if isinstance(error, MemoError):
         try:
@@ -107,7 +107,7 @@ def print_error(error: Exception, verbose: bool = False) -> None:
         except UnicodeEncodeError:
             print(f"[ERROR] {str(error)}", file=sys.stderr)
 
-    if verbose and hasattr(error, '__traceback__'):
+    if verbose and isinstance(error, BaseException):
         import traceback
         print("\nStack trace:", file=sys.stderr)
         traceback.print_exception(type(error), error, error.__traceback__)
@@ -177,7 +177,7 @@ def get_user_input(prompt: str, default: Optional[str] = None, required: bool = 
         return None
 
 
-def format_bytes(size: int) -> str:
+def format_bytes(size: float) -> str:
     """Format bytes in human-readable format."""
     for unit in ['B', 'KB', 'MB', 'GB']:
         if size < 1024.0:
