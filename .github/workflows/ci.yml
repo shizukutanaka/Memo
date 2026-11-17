@@ -1,10 +1,28 @@
 name: CI/CD Pipeline
 
+# This is the single canonical workflow. ci-cd.yml and tests.yml were
+# removed after verifying that every gate they ran is covered here at
+# equal or wider scope:
+# - Test matrix: 3 OS x Python 3.9-3.13 (theirs: ubuntu-only 3.9-3.11
+#   and 3 OS x 3.9-3.12), running the full suite (tests/ plus the root
+#   suites; tests.yml ran tests/ only).
+# - Quality and security gates: identical checks (flake8 / black /
+#   isort / advisory mypy, Bandit -ll on the shipped modules,
+#   pip-audit), plus the build job, which only ever existed here.
+# Elements unique to the removed files were migrated, not dropped:
+# the `release` trigger came from ci-cd.yml, and the advisory
+# whole-tree Bandit JSON report in the security job came from
+# tests.yml. ci-cd.yml's sqlite3 CLI install step was not migrated:
+# this workflow's test job passes on every leg without it (the
+# sqlite3 module is part of Python's standard library).
+
 on:
   push:
     branches: [ main, develop, master ]
   pull_request:
     branches: [ main, develop, master ]
+  release:
+    types: [published]
   schedule:
     # Run tests daily at 2 AM UTC
     - cron: '0 2 * * *'
@@ -116,6 +134,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install bandit pip-audit
+
+    # Advisory whole-tree report (migrated from tests.yml when the
+    # workflows were consolidated): keeps the findings in unshipped
+    # legacy modules visible in the job log without gating on them.
+    # The gate is the shipped-modules scan below.
+    - name: Bandit whole-tree report (advisory)
+      run: bandit -r . -f json -o bandit-report.json || true
 
     # Bandit is a real gate over the modules that actually ship (the
     # py-modules list in pyproject.toml). The previous whole-tree scan
