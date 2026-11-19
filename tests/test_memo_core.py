@@ -10,6 +10,7 @@ collected zero tests and reported success without verifying anything.
 import json
 import sqlite3
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -84,6 +85,24 @@ class TestMemoStore:
 
         assert len(results) > 0
         assert any("testing" in m["content"].lower() for m in results)
+
+    @pytest.mark.parametrize("query", ["議", "整理", "AI", "%", "_"])
+    def test_short_search_matches_literal_content(self, store, query):
+        match = store.add("議事録を整理する; ai 10% foo_bar")
+        store.add("Unrelated notes")
+
+        assert [memo["id"] for memo in store.search(query)] == [match["id"]]
+
+    def test_short_search_respects_filters(self, store):
+        match = store.add("整理 current", tags=["work"])
+        store.add("整理 completed", tags=["work"], status="completed")
+        store.add("整理 personal", tags=["personal"])
+
+        results = store.search("整理", statuses=["active"], tags=["work"])
+
+        assert [memo["id"] for memo in results] == [match["id"]]
+        assert results[0]["text"] == "整理 current"
+        assert not store.search("整理", from_date=datetime.max.replace(tzinfo=timezone.utc))
 
     def test_get_memo_by_id(self, store, sample_memo_data):
         """Test retrieving a specific memo by ID."""

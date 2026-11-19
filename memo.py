@@ -535,16 +535,20 @@ class MemoStore:
         whole_word: bool = False,
         fuzzy: bool = False,
     ) -> List[Dict]:
-        """Search memos using SQLite FTS5 with BM25 ranking and advanced options."""
+        """Search memos using FTS5 or literal content matching for short queries."""
+        if not query:
+            return []
+
         try:
+            # The FTS5 trigram index cannot match one- or two-character queries.
+            if len(query) < 3 and not (regex or case_sensitive or whole_word or fuzzy):
+                return self._fallback_search(
+                    query, from_date, to_date, statuses, tags, literal_content=True
+                )
+
             conn = sqlite3.connect(str(self.db_path))
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-
-            # Prepare FTS query based on options
-            if not query:
-                conn.close()
-                return []
 
             fts_query = query
 
@@ -636,16 +640,22 @@ class MemoStore:
         statuses: Optional[List[str]] = None,
         tags: Optional[List[str]] = None,
         conn: Optional[sqlite3.Connection] = None,
+        *,
+        literal_content: bool = False,
     ) -> List[Dict]:
-        """Fallback search using LIKE when FTS fails."""
+        """Search memo content without the FTS index."""
         if conn is None:
             conn = sqlite3.connect(str(self.db_path))
             conn.row_factory = sqlite3.Row
 
         cursor = conn.cursor()
 
-        sql = "SELECT * FROM memos WHERE content LIKE ?"
-        params = [f"%{query}%"]
+        if literal_content:
+            sql = "SELECT * FROM memos WHERE instr(lower(content), lower(?)) > 0"
+            params = [query]
+        else:
+            sql = "SELECT * FROM memos WHERE content LIKE ?"
+            params = [f"%{query}%"]
 
         if from_date:
             sql += " AND created_at >= ?"

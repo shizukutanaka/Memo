@@ -48,6 +48,10 @@ include `tag`, `edit`, `delete`, `duplicate`, `merge`, `split`,
 `templates`, `backup`, and `link`. Run `python memo.py --help` (or
 `python memo.py <command> --help`) for the full list and options.
 
+Ordinary one- or two-character searches, such as `python memo.py search 整理`,
+match literal text in memo bodies and show the most recently updated matches
+first. Longer queries use full-text ranking.
+
 ## Use as a library
 
 Memo can also be imported from other Python programs. The supported
