@@ -176,7 +176,7 @@ class MemoStore:
         self._init_database()
 
         if not self.templates_file.exists():
-            self.templates_file.touch()
+            self._init_templates()
 
         self.log_dir = self.data_dir / "logs"
         self.log_dir.mkdir(parents=True, exist_ok=True)
@@ -1027,10 +1027,35 @@ class MemoStore:
 
     def get_templates(self) -> Dict:
         """Get all available templates."""
-        if self.templates_file.exists():
-            with self.templates_file.open("r", encoding="utf-8") as f:
-                return json.load(f)
-        return {}
+        if not self.templates_file.exists():
+            self._init_templates()
+
+        content = self.templates_file.read_bytes()
+        try:
+            templates = json.loads(content.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            templates = None
+
+        if isinstance(templates, dict):
+            return templates
+
+        if content:
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            quarantine_file = self.templates_file.with_name(
+                f"{self.templates_file.name}.corrupt-{timestamp}"
+            )
+            self.templates_file.rename(quarantine_file)
+        else:
+            self.templates_file.unlink(missing_ok=True)
+
+        self._init_templates()
+
+        logger = getattr(self, "logger", None)
+        if logger is not None:
+            logger.warning("Recovered corrupt templates file: %s", self.templates_file)
+
+        with self.templates_file.open("r", encoding="utf-8") as f:
+            return json.load(f)
 
     def create_from_template(self, template_key: str, variables: Dict[str, str]) -> Optional[Dict]:
         """Create a memo from a template."""
