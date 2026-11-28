@@ -351,6 +351,52 @@ class TestMemoExport:
         assert len(lines) == 1 + len(multiple_memos)
 
 
+class TestBackupConsistency:
+    """Backups must preserve committed data from the WAL-mode database."""
+
+    def test_backup_includes_commit_visible_only_in_wal(self, store):
+        reader = sqlite3.connect(str(store.db_path))
+        reader.execute("BEGIN")
+        reader.execute("SELECT count(*) FROM memos").fetchone()
+
+        try:
+            added = store.add("committed while a concurrent reader is open")
+            backup_path = store.create_backup("concurrent_reader")
+
+            backup_conn = sqlite3.connect(str(backup_path))
+            try:
+                rows = backup_conn.execute(
+                    "SELECT id, content FROM memos WHERE id = ?", (added["id"],)
+                ).fetchall()
+            finally:
+                backup_conn.close()
+        finally:
+            reader.close()
+
+        assert rows == [(added["id"], "committed while a concurrent reader is open")]
+
+    def test_restore_replaces_commit_visible_only_in_wal(self, store):
+        empty_backup = store.create_backup("empty")
+
+        reader = sqlite3.connect(str(store.db_path))
+        reader.execute("BEGIN")
+        reader.execute("SELECT count(*) FROM memos").fetchone()
+
+        try:
+            store.add("post-backup memo")
+            assert store.restore_backup(empty_backup) is True
+
+            verification_conn = sqlite3.connect(str(store.db_path))
+            try:
+                count = verification_conn.execute("SELECT count(*) FROM memos").fetchone()[0]
+            finally:
+                verification_conn.close()
+        finally:
+            reader.close()
+
+        assert count == 0
+
+
 class TestQuarantine:
     """Invalid lines are quarantined for manual inspection.
 

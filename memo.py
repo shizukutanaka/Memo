@@ -1717,6 +1717,18 @@ class MemoStore:
 
         return max(timestamps) if timestamps else None
 
+    @staticmethod
+    def _copy_sqlite_database(source_path: Path, target_path: Path) -> None:
+        source = sqlite3.connect(str(source_path))
+        try:
+            target = sqlite3.connect(str(target_path))
+            try:
+                source.backup(target)
+            finally:
+                target.close()
+        finally:
+            source.close()
+
     def create_backup(self, label: Optional[str] = None) -> Path:
         """Create a backup of current memos."""
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -1728,10 +1740,19 @@ class MemoStore:
         backup_path = self.backup_dir / backup_name
 
         if self.db_path.exists():
-            import shutil
-
             with self._acquire_lock(shared=True):
-                shutil.copy2(self.db_path, backup_path)
+                fd, temp_name = tempfile.mkstemp(
+                    prefix=f".{backup_name}.", suffix=".tmp", dir=self.backup_dir
+                )
+                os.close(fd)
+                temp_path = Path(temp_name)
+
+                try:
+                    self._copy_sqlite_database(self.db_path, temp_path)
+                    os.replace(temp_path, backup_path)
+                except Exception:
+                    temp_path.unlink(missing_ok=True)
+                    raise
             self.logger.info("Created backup: %s", backup_path.name)
 
             # Clean old backups
@@ -1757,17 +1778,15 @@ class MemoStore:
         safety_backup = self.create_backup("pre_restore")
 
         try:
-            import shutil
-
             with self._acquire_lock():
-                shutil.copy2(backup_path, self.db_path)
+                self._copy_sqlite_database(backup_path, self.db_path)
             self.logger.info("Restored from backup: %s", backup_path.name)
             return True
         except Exception as e:
             self.logger.error("Failed to restore backup: %s", e)
             # Try to restore safety backup
             if safety_backup.exists():
-                shutil.copy2(safety_backup, self.db_path)
+                self._copy_sqlite_database(safety_backup, self.db_path)
             return False
 
     def list_backups(self) -> List[Dict[str, Any]]:
